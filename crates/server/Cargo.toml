@@ -20,7 +20,7 @@ thiserror = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-async-graphql = { version = "7.2.1", features = ["chrono", "tempfile"] }
+async-graphql = { version = "7.2.1", features = ["chrono", "tempfile", "dataloader"] }
 async-graphql-axum = "7.2.1"
 axum = "0.8.9"
 base64 = "0.23.1"

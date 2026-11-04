@@ -1,0 +1,71 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH p AS MATERIALIZED (\n                   SELECT * FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)\n               )\n               SELECT count(*)::int AS \"plays!\",\n                      (coalesce(sum(ms_played), 0) / 60000)::int AS \"minutes!\",\n                      (SELECT count(*) FROM (\n                          SELECT DISTINCT coalesce(item_uri, artist || E'\\x1f' || name) AS track\n                          FROM p\n                       ) t WHERE track IS NOT NULL)::int AS \"tracks!\",\n                      (SELECT count(*) FROM (\n                          SELECT DISTINCT artist FROM p WHERE artist IS NOT NULL\n                       ) a)::int AS \"artists!\",\n                      avg(CASE WHEN skipped THEN 1.0 WHEN NOT skipped THEN 0.0 END)::float8 AS skip_rate,\n                      min(ts) AS first_played,\n                      max(ts) AS last_played\n               FROM p",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "plays!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "minutes!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "tracks!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "artists!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "skip_rate",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "first_played",
+        "type_info": "Timestamptz",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "last_played",
+        "type_info": "Timestamptz",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8Array",
+        "Timestamptz",
+        "Timestamptz",
+        "TextArray",
+        "Int4",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "a0140dbabb34f07024c33cc7c304421167aefa1bf48cd85ad75d948e66538819"
+}

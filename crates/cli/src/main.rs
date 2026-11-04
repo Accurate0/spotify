@@ -1,6 +1,7 @@
 mod client;
 mod graphql;
 mod import;
+mod stats;
 
 use std::path::PathBuf;
 
@@ -46,6 +47,55 @@ enum Command {
         /// Only show what would be uploaded.
         #[arg(long)]
         dry_run: bool,
+    },
+    /// Totals: listening time, plays, tracks, artists, skip rate.
+    Summary {
+        #[command(flatten)]
+        filter: stats::FilterArgs,
+    },
+    /// Most played artists, tracks or albums.
+    Top {
+        #[arg(value_enum)]
+        kind: stats::TopKind,
+        #[command(flatten)]
+        filter: stats::FilterArgs,
+        #[arg(long, short = 'n', default_value_t = 20)]
+        limit: i32,
+        /// Rank by listening time or by number of plays.
+        #[arg(long, value_enum, default_value_t)]
+        by: stats::RankBy,
+    },
+    /// Listening time per day, week, month or year.
+    Timeline {
+        #[command(flatten)]
+        filter: stats::FilterArgs,
+        #[arg(long, value_enum, default_value = "month")]
+        bucket: stats::TimeBucket,
+    },
+    /// Listening by weekday and hour.
+    Heatmap {
+        #[command(flatten)]
+        filter: stats::FilterArgs,
+    },
+    /// Search artists, tracks and episodes by name.
+    Search {
+        query: String,
+        #[arg(long, short = 'n', default_value_t = 10)]
+        limit: i32,
+    },
+    /// Stats and recent plays for a track or episode, by URI or best search match.
+    Track {
+        query: String,
+        #[command(flatten)]
+        filter: stats::FilterArgs,
+    },
+    /// Stats and top tracks for an artist.
+    Artist {
+        name: String,
+        #[command(flatten)]
+        filter: stats::FilterArgs,
+        #[arg(long, short = 'n', default_value_t = 10)]
+        limit: i32,
     },
 }
 
@@ -102,6 +152,22 @@ async fn main() -> anyhow::Result<()> {
             account,
             dry_run,
         } => import::run(&client, &account, &path, dry_run).await?,
+        Command::Summary { filter } => stats::summary(&client, &filter).await?,
+        Command::Top {
+            kind,
+            filter,
+            limit,
+            by,
+        } => stats::top(&client, kind, &filter, limit, by).await?,
+        Command::Timeline { filter, bucket } => stats::timeline(&client, &filter, bucket).await?,
+        Command::Heatmap { filter } => stats::heatmap(&client, &filter).await?,
+        Command::Search { query, limit } => stats::search(&client, &query, limit).await?,
+        Command::Track { query, filter } => stats::track(&client, &query, &filter).await?,
+        Command::Artist {
+            name,
+            filter,
+            limit,
+        } => stats::artist(&client, &name, &filter, limit).await?,
     }
 
     Ok(())

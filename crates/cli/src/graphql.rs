@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[cynic::schema("spotify")]
-mod schema {}
+pub mod schema {}
 
 cynic::impl_scalar!(DateTime<Utc>, schema::DateTime);
 
@@ -28,6 +28,7 @@ cynic::impl_scalar!(Upload, schema::Upload);
 
 #[derive(cynic::QueryFragment, Debug)]
 pub struct Account {
+    pub id: cynic::Id,
     pub slug: String,
     pub display_name: String,
     pub spotify_username: Option<String>,

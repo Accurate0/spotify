@@ -14,7 +14,7 @@ use tower_http::trace::TraceLayer;
 const MAX_BODY_BYTES: usize = 64 * 1024 * 1024;
 
 pub fn router(pool: PgPool) -> Router {
-    let schema = graphql::builder().data(pool).finish();
+    let schema = graphql::schema(pool);
 
     Router::new()
         .route("/graphql", get(graphiql).post_service(GraphQL::new(schema)))

@@ -43,6 +43,16 @@ pub async fn merge(
         .collect();
     let inserted = insert(tx, account_id, file_id, as_of, &unmatched).await?;
 
+    sqlx::query!(
+        "INSERT INTO extended_coverage (account_id, first_ts, last_ts)
+         SELECT $1, min(ts), max(ts) FROM plays WHERE account_id = $1
+         ON CONFLICT (account_id) DO UPDATE
+         SET first_ts = EXCLUDED.first_ts, last_ts = EXCLUDED.last_ts",
+        account_id
+    )
+    .execute(&mut **tx)
+    .await?;
+
     Ok(RowCounts {
         total: plays.len() as i32,
         inserted: inserted as i32,

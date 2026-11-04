@@ -1,9 +1,15 @@
+use async_graphql::dataloader::DataLoader;
 use async_graphql::{EmptySubscription, Schema, SchemaBuilder};
+use sqlx::PgPool;
 
+mod catalog;
+mod loaders;
 mod mutation;
 pub mod node;
 pub mod objects;
+mod page;
 mod query;
+mod stats;
 
 pub use mutation::MutationRoot;
 pub use query::QueryRoot;
@@ -12,6 +18,21 @@ pub type AppSchema = Schema<QueryRoot, MutationRoot, EmptySubscription>;
 
 pub fn builder() -> SchemaBuilder<QueryRoot, MutationRoot, EmptySubscription> {
     Schema::build(QueryRoot, MutationRoot, EmptySubscription)
+}
+
+/// The schema with its data: the pool and batch loaders (uncached, so no stale reads).
+pub fn schema(pool: PgPool) -> AppSchema {
+    builder()
+        .data(DataLoader::new(
+            loaders::AccountLoader(pool.clone()),
+            tokio::spawn,
+        ))
+        .data(DataLoader::new(
+            loaders::ItemLoader(pool.clone()),
+            tokio::spawn,
+        ))
+        .data(pool)
+        .finish()
 }
 
 pub fn sdl() -> String {

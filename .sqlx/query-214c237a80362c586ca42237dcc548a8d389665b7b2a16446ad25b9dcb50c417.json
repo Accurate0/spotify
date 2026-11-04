@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO extended_coverage (account_id, first_ts, last_ts)\n         SELECT $1, min(ts), max(ts) FROM plays WHERE account_id = $1\n         ON CONFLICT (account_id) DO UPDATE\n         SET first_ts = EXCLUDED.first_ts, last_ts = EXCLUDED.last_ts",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "214c237a80362c586ca42237dcc548a8d389665b7b2a16446ad25b9dcb50c417"
+}

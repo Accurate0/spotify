@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT artist AS \"artist!\"\n               FROM items\n               WHERE artist ILIKE $1\n               GROUP BY artist\n               ORDER BY similarity(artist, $2) DESC, artist\n               LIMIT $3 OFFSET $4",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "artist!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "items",
+            "name": "artist"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "a5bb45db0ddb8b32b9207fafc8882933a7629338909d19f72edbd247a7814926"
+}

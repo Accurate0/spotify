@@ -4,7 +4,7 @@ use async_graphql::{Context, Enum, ID, InputObject, Object, SimpleObject, Upload
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 
-use super::node::{NodeType, decode_as};
+use super::node::{NodeType, decode_row_id};
 use super::objects::{Account, Export, ExportFile};
 use crate::import::{self, FileUpload, ImportOutcome};
 
@@ -121,7 +121,7 @@ impl MutationRoot {
         file: Upload,
     ) -> async_graphql::Result<UploadExportFilePayload> {
         let pool = ctx.data::<PgPool>()?;
-        let export_id = decode_as(&input.export_id, NodeType::Export)?;
+        let export_id = decode_row_id(&input.export_id, NodeType::Export)?;
         let export = Export::by_id(pool, export_id)
             .await?
             .ok_or("export not found")?;
@@ -178,7 +178,7 @@ impl MutationRoot {
         input: FinalizeExportInput,
     ) -> async_graphql::Result<FinalizeExportPayload> {
         let pool = ctx.data::<PgPool>()?;
-        let export_id = decode_as(&input.export_id, NodeType::Export)?;
+        let export_id = decode_row_id(&input.export_id, NodeType::Export)?;
 
         let export = Export::finalize(pool, export_id)
             .await?

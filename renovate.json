@@ -2,5 +2,20 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "local>anurag/k8s//platform-services/renovate/presets/default"
+  ],
+  "packageRules": [
+    {
+      "description": "Web dependencies in one PR; Relay artifacts are committed, so recompile them. npm only, so web/Dockerfile base images stay in their own PRs.",
+      "matchManagers": ["npm"],
+      "matchFileNames": ["web/**"],
+      "groupName": "web",
+      "postUpgradeTasks": {
+        "commands": [
+          "sh -c 'cd web && pnpm install --no-frozen-lockfile && pnpm relay'"
+        ],
+        "fileFilters": ["web/src/**/__generated__/*.graphql.ts"],
+        "executionMode": "branch"
+      }
+    }
   ]
 }

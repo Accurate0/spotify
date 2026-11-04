@@ -1,0 +1,8 @@
+minimumReleaseAge: 4320
+minimumReleaseAgeExclude:
+  - "@rollup/rollup-*"
+  - "@esbuild/*"
+  - "@tailwindcss/oxide-*"
+  - "lightningcss-*"
+onlyBuiltDependencies:
+  - esbuild

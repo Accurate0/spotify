@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH s AS (\n            SELECT * FROM UNNEST($2::int[], $3::timestamptz[], $4::text[], $5::int[], $6::text[],\n                                 $7::text[], $8::text[], $9::text[], $10::text[])\n                AS s(idx, ts, uri, ms_played, platform, reason_start, reason_end, name, artist)\n         ),\n         candidates AS (\n            SELECT s.*, p.id AS pid, p.ts AS pts\n            FROM s JOIN plays p ON p.account_id = $1 AND p.item_uri = s.uri\n                AND p.ms_played = s.ms_played\n                AND p.ts BETWEEN s.ts - interval '3 seconds' AND s.ts + interval '3 seconds'\n            UNION ALL\n            SELECT s.*, p.id, p.ts\n            FROM s JOIN plays p ON p.account_id = $1 AND p.item_uri IS NULL AND s.uri IS NULL\n                AND p.raw_name IS NOT DISTINCT FROM s.name\n                AND p.raw_artist IS NOT DISTINCT FROM s.artist\n                AND p.ms_played = s.ms_played\n                AND p.ts BETWEEN s.ts - interval '3 seconds' AND s.ts + interval '3 seconds'\n         )\n         SELECT c.idx AS \"idx!\", c.pid AS \"pid!\",\n                abs(extract(epoch FROM c.ts - c.pts))::float8 AS \"diff!\"\n         FROM candidates c JOIN plays p ON p.id = c.pid\n         WHERE p.platform IS NOT DISTINCT FROM c.platform\n           AND (p.reason_start IS NULL OR c.reason_start IS NULL OR p.reason_start = c.reason_start)\n           AND (p.reason_end IS NULL OR c.reason_end IS NULL OR p.reason_end = c.reason_end)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "idx!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "pid!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "diff!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int4Array",
+        "TimestamptzArray",
+        "TextArray",
+        "Int4Array",
+        "TextArray",
+        "TextArray",
+        "TextArray",
+        "TextArray",
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "ec3e9c1bb17145dc599a0ec277bedf10c91eeac3e8a8b6bef2c5eaf7d7a3264b"
+}

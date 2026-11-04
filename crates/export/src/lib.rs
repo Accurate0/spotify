@@ -2,9 +2,15 @@
 //! exports. Anything personally identifying (IPs, user agents, contact details) is never
 //! deserialized.
 
+mod account;
 mod extended;
 mod kind;
 
+pub use account::{
+    BasicPlay, Follow, LibraryItem, LibraryKind, Marquee, Playlist, PlaylistItem, Search,
+    parse_basic_history, parse_follow, parse_inferences, parse_library, parse_marquee,
+    parse_playlists, parse_searches, parse_username,
+};
 pub use extended::{ExtendedPlay, ItemKind, parse_extended};
 pub use kind::FileKind;
 

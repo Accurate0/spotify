@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE plays p SET\n            ts = CASE WHEN $1 >= p.source_as_of THEN m.ts ELSE p.ts END,\n            platform = CASE WHEN $1 >= p.source_as_of\n                THEN coalesce(m.platform, p.platform) ELSE coalesce(p.platform, m.platform) END,\n            conn_country = CASE WHEN $1 >= p.source_as_of\n                THEN coalesce(m.conn_country, p.conn_country) ELSE coalesce(p.conn_country, m.conn_country) END,\n            reason_start = CASE WHEN $1 >= p.source_as_of\n                THEN coalesce(m.reason_start, p.reason_start) ELSE coalesce(p.reason_start, m.reason_start) END,\n            reason_end = CASE WHEN $1 >= p.source_as_of\n                THEN coalesce(m.reason_end, p.reason_end) ELSE coalesce(p.reason_end, m.reason_end) END,\n            shuffle = CASE WHEN $1 >= p.source_as_of\n                THEN coalesce(m.shuffle, p.shuffle) ELSE coalesce(p.shuffle, m.shuffle) END,\n            skipped = CASE WHEN $1 >= p.source_as_of\n                THEN coalesce(m.skipped, p.skipped) ELSE coalesce(p.skipped, m.skipped) END,\n            offline = CASE WHEN $1 >= p.source_as_of\n                THEN coalesce(m.offline, p.offline) ELSE coalesce(p.offline, m.offline) END,\n            offline_ts = CASE WHEN $1 >= p.source_as_of\n                THEN coalesce(m.offline_ts, p.offline_ts) ELSE coalesce(p.offline_ts, m.offline_ts) END,\n            incognito = CASE WHEN $1 >= p.source_as_of\n                THEN coalesce(m.incognito, p.incognito) ELSE coalesce(p.incognito, m.incognito) END,\n            source_as_of = greatest(p.source_as_of, $1),\n            last_file_id = $2\n         FROM UNNEST($3::bigint[], $4::timestamptz[], $5::text[], $6::text[], $7::text[],\n                     $8::text[], $9::bool[], $10::bool[], $11::bool[], $12::timestamptz[],\n                     $13::bool[])\n            AS m(pid, ts, platform, conn_country, reason_start, reason_end, shuffle, skipped,\n                 offline, offline_ts, incognito)\n         WHERE p.id = m.pid",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Int8",
+        "Int8Array",
+        "TimestamptzArray",
+        "TextArray",
+        "TextArray",
+        "TextArray",
+        "TextArray",
+        "BoolArray",
+        "BoolArray",
+        "BoolArray",
+        "TimestamptzArray",
+        "BoolArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6f9c388d43bd63d87e513929caceba70329f23a10f6cb66bd9185463e05338c0"
+}

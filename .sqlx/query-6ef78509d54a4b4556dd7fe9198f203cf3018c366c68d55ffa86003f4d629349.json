@@ -1,0 +1,124 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, export_id, name, kind, sha256, rows_total, rows_inserted, rows_merged,\n                    imported_at\n             FROM export_files WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "export_files",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "export_id",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "export_files",
+            "name": "export_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "export_files",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "kind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "export_files",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "sha256",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "export_files",
+            "name": "sha256"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "rows_total",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "export_files",
+            "name": "rows_total"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "rows_inserted",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "export_files",
+            "name": "rows_inserted"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "rows_merged",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "export_files",
+            "name": "rows_merged"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "imported_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "export_files",
+            "name": "imported_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6ef78509d54a4b4556dd7fe9198f203cf3018c366c68d55ffa86003f4d629349"
+}

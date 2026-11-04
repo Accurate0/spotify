@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO searches (account_id, file_id, ts, platform, query, interaction_uris)\n         SELECT $1, $2, u.ts, u.platform, u.query,\n                ARRAY(SELECT jsonb_array_elements_text(u.uris))\n         FROM UNNEST($3::timestamptz[], $4::text[], $5::text[], $6::jsonb[])\n            AS u(ts, platform, query, uris)\n         ON CONFLICT DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "TimestamptzArray",
+        "TextArray",
+        "TextArray",
+        "JsonbArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d1dbbccd577582266c545a4e13f99a2e7eab81c46f48964ba26f239862f6df41"
+}

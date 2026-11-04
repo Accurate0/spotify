@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO items (uri, kind, name, artist, album, as_of)\n         SELECT u.uri, u.kind, u.name, u.artist, u.album, $1\n         FROM UNNEST($2::text[], $3::text[], $4::text[], $5::text[], $6::text[])\n            AS u(uri, kind, name, artist, album)\n         ON CONFLICT (uri) DO UPDATE SET\n            name = coalesce(EXCLUDED.name, items.name),\n            artist = coalesce(EXCLUDED.artist, items.artist),\n            album = coalesce(EXCLUDED.album, items.album),\n            as_of = EXCLUDED.as_of\n         WHERE items.as_of <= EXCLUDED.as_of",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "TextArray",
+        "TextArray",
+        "TextArray",
+        "TextArray",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f84146ca214f891aba246fb7496e4c1156377e5b28bbf201ce4a5992c2122b1a"
+}

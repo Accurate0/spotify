@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT rows_total, rows_inserted, rows_merged FROM export_files WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "rows_total",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "export_files",
+            "name": "rows_total"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "rows_inserted",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "export_files",
+            "name": "rows_inserted"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "rows_merged",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "export_files",
+            "name": "rows_merged"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "d417da0fd2b413dd2db9120d2da457a56d9ebd9a0d2a584a83df4b543cf363a5"
+}

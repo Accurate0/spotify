@@ -2,7 +2,7 @@ use async_graphql::{Context, ID, Object};
 use sqlx::PgPool;
 
 use super::node::{Node, NodeType, decode};
-use super::objects::{self, Account, Export, ExportFile};
+use super::objects::{Account, Export, ExportFile};
 
 #[derive(Default)]
 pub struct QueryRoot;
@@ -28,13 +28,7 @@ impl QueryRoot {
 
     async fn accounts(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Account>> {
         let pool = ctx.data::<PgPool>()?;
-        Ok(sqlx::query_as(concat!(
-            "SELECT ",
-            objects::account_columns!(),
-            " FROM accounts ORDER BY slug"
-        ))
-        .fetch_all(pool)
-        .await?)
+        Ok(Account::all(pool).await?)
     }
 
     async fn account(

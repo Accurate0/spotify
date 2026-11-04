@@ -84,9 +84,19 @@ impl FileKind {
         Self::ALL.into_iter().find(|k| k.as_str() == value)
     }
 
-    /// Whether the server can import this kind yet.
+    /// Whether the server imports this kind. Private files are recognized only so they can be
+    /// reported as skipped.
     pub fn is_importable(self) -> bool {
-        matches!(self, Self::ExtendedAudio | Self::ExtendedVideo)
+        self != Self::Private
+    }
+
+    /// Kinds whose rows describe state at export time rather than events. The newest export
+    /// with a file of the kind is the current state; older ones are kept as history.
+    pub fn is_snapshot(self) -> bool {
+        matches!(
+            self,
+            Self::Library | Self::Playlist | Self::Follow | Self::Marquee | Self::Inferences
+        )
     }
 }
 

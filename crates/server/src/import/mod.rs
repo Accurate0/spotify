@@ -1,10 +1,44 @@
 //! Imports export files into Postgres. Each file is imported in a single transaction.
 
+mod account;
 mod extended;
 
 use chrono::{DateTime, Utc};
-use spotify_export::FileKind;
+use spotify_export::{FileKind, ParseError};
 use sqlx::PgPool;
+
+enum Parsed {
+    Extended(Vec<spotify_export::ExtendedPlay>),
+    BasicHistory(Vec<spotify_export::BasicPlay>),
+    Searches(Vec<spotify_export::Search>),
+    Library(Vec<spotify_export::LibraryItem>),
+    Playlists(Vec<spotify_export::Playlist>),
+    Follow(spotify_export::Follow),
+    Marquee(Vec<spotify_export::Marquee>),
+    Inferences(Vec<String>),
+    Username(Option<String>),
+}
+
+impl Parsed {
+    /// Callers check `FileKind::is_importable` first; private files are never parsed.
+    fn parse(kind: FileKind, bytes: &[u8]) -> Result<Self, ParseError> {
+        use spotify_export as e;
+
+        Ok(match kind {
+            FileKind::ExtendedAudio => Self::Extended(e::parse_extended(bytes, false)?),
+            FileKind::ExtendedVideo => Self::Extended(e::parse_extended(bytes, true)?),
+            FileKind::AccountStreamingHistory => Self::BasicHistory(e::parse_basic_history(bytes)?),
+            FileKind::SearchQueries => Self::Searches(e::parse_searches(bytes)?),
+            FileKind::Library => Self::Library(e::parse_library(bytes)?),
+            FileKind::Playlist => Self::Playlists(e::parse_playlists(bytes)?),
+            FileKind::Follow => Self::Follow(e::parse_follow(bytes)?),
+            FileKind::Marquee => Self::Marquee(e::parse_marquee(bytes)?),
+            FileKind::Inferences => Self::Inferences(e::parse_inferences(bytes)?),
+            FileKind::Userdata => Self::Username(e::parse_username(bytes)?),
+            FileKind::Private => unreachable!("private files are not imported"),
+        })
+    }
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum ImportError {
@@ -59,11 +93,13 @@ pub async fn existing_file(
     account_id: i64,
     sha256: &str,
 ) -> Result<Option<i64>, sqlx::Error> {
-    sqlx::query_scalar("SELECT id FROM export_files WHERE account_id = $1 AND sha256 = $2")
-        .bind(account_id)
-        .bind(sha256)
-        .fetch_optional(pool)
-        .await
+    sqlx::query_scalar!(
+        "SELECT id FROM export_files WHERE account_id = $1 AND sha256 = $2",
+        account_id,
+        sha256,
+    )
+    .fetch_optional(pool)
+    .await
 }
 
 pub async fn import_file(
@@ -86,31 +122,30 @@ pub async fn import_file(
         return Ok(ImportOutcome::Duplicate { file_id });
     }
 
-    let is_video = upload.kind == FileKind::ExtendedVideo;
+    let kind = upload.kind;
     let bytes = upload.bytes.to_vec();
-    let plays =
-        tokio::task::spawn_blocking(move || spotify_export::parse_extended(&bytes, is_video))
-            .await
-            .expect("parse task panicked")
-            .map_err(|source| ImportError::Parse {
-                name: upload.name.to_owned(),
-                source,
-            })?;
+    let parsed = tokio::task::spawn_blocking(move || Parsed::parse(kind, &bytes))
+        .await
+        .expect("parse task panicked")
+        .map_err(|source| ImportError::Parse {
+            name: upload.name.to_owned(),
+            source,
+        })?;
 
     let mut tx = pool.begin().await?;
 
     // A concurrent upload of the same file loses the race here instead of double-importing.
-    let file_id: Option<i64> = sqlx::query_scalar(
+    let file_id = sqlx::query_scalar!(
         "INSERT INTO export_files (export_id, account_id, name, kind, sha256)
          VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (account_id, sha256) DO NOTHING
          RETURNING id",
+        upload.export_id,
+        upload.account_id,
+        upload.name,
+        upload.kind.as_str(),
+        actual,
     )
-    .bind(upload.export_id)
-    .bind(upload.account_id)
-    .bind(upload.name)
-    .bind(upload.kind.as_str())
-    .bind(&actual)
     .fetch_optional(&mut *tx)
     .await?;
 
@@ -122,15 +157,38 @@ pub async fn import_file(
         return Ok(ImportOutcome::Duplicate { file_id });
     };
 
-    let counts = extended::merge(&mut tx, upload.account_id, file_id, upload.as_of, &plays).await?;
+    let (account_id, as_of) = (upload.account_id, upload.as_of);
+    let counts = match parsed {
+        Parsed::Extended(plays) => {
+            extended::merge(&mut tx, account_id, file_id, as_of, &plays).await?
+        }
+        Parsed::BasicHistory(plays) => {
+            account::basic_history(&mut tx, account_id, file_id, &plays).await?
+        }
+        Parsed::Searches(searches) => {
+            account::searches(&mut tx, account_id, file_id, &searches).await?
+        }
+        Parsed::Library(items) => account::library(&mut tx, account_id, file_id, &items).await?,
+        Parsed::Playlists(playlists) => {
+            account::playlists(&mut tx, account_id, file_id, &playlists).await?
+        }
+        Parsed::Follow(follow) => account::follow(&mut tx, account_id, file_id, follow).await?,
+        Parsed::Marquee(rows) => account::marquee(&mut tx, account_id, file_id, &rows).await?,
+        Parsed::Inferences(values) => {
+            account::inferences(&mut tx, account_id, file_id, &values).await?
+        }
+        Parsed::Username(username) => {
+            account::username(&mut tx, account_id, username.as_deref()).await?
+        }
+    };
 
-    sqlx::query(
+    sqlx::query!(
         "UPDATE export_files SET rows_total = $2, rows_inserted = $3, rows_merged = $4 WHERE id = $1",
+        file_id,
+        counts.total,
+        counts.inserted,
+        counts.merged,
     )
-    .bind(file_id)
-    .bind(counts.total)
-    .bind(counts.inserted)
-    .bind(counts.merged)
     .execute(&mut *tx)
     .await?;
 

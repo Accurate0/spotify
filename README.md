@@ -21,4 +21,15 @@ cargo run -p spotify-cli -- accounts add me
 cargo run -p spotify-cli -- import "/Volumes/storage/spotify exports/2024" --account me
 ```
 
-`cargo test` needs `DATABASE_URL`; merge tests create a throwaway database per test.
+SQL uses the checked `sqlx::query!` macros, so building needs `DATABASE_URL` pointing at a
+migrated database, or `SQLX_OFFLINE=true` to use the committed `.sqlx/` cache. After changing
+a query or migration:
+
+```sh
+sqlx migrate run --source crates/server/migrations
+cargo sqlx prepare --workspace -- --all-targets
+```
+
+`cargo test` needs `DATABASE_URL`; import tests create a throwaway database per test.
+
+Import each account's exports separately: `raw/` contains zips of both accounts' data.

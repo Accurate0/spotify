@@ -31,7 +31,7 @@ struct RawRow {
     incognito_mode: Option<bool>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ItemKind {
     Track,
@@ -51,7 +51,7 @@ impl ItemKind {
 
 /// A normalized play. `name`/`artist`/`album` describe the item: for episodes `artist` is the
 /// show, for audiobooks it is the book title and `name` the chapter.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExtendedPlay {
     pub ts: DateTime<Utc>,
     pub uri: Option<String>,

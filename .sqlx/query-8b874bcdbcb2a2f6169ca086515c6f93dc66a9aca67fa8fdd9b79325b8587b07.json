@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE accounts SET spotify_username = $2 WHERE id = $1 AND spotify_username IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8b874bcdbcb2a2f6169ca086515c6f93dc66a9aca67fa8fdd9b79325b8587b07"
+}

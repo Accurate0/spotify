@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT interaction_uris FROM searches WHERE query = 'beach'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "interaction_uris",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "searches",
+            "name": "interaction_uris"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "682335023d61d2abad5680f61dd78d129d68571dd1be7f9731774644ddfdf39d"
+}

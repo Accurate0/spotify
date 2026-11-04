@@ -5,7 +5,7 @@ use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 
 use super::node::{NodeType, decode_as};
-use super::objects::{self, Account, Export, ExportFile};
+use super::objects::{Account, Export, ExportFile};
 use crate::import::{self, FileUpload, ImportOutcome};
 
 #[derive(Default)]
@@ -82,25 +82,19 @@ impl MutationRoot {
         let pool = ctx.data::<PgPool>()?;
         let display_name = input.display_name.unwrap_or_else(|| input.slug.clone());
 
-        let account = sqlx::query_as(concat!(
-            "INSERT INTO accounts (slug, display_name) VALUES ($1, $2) RETURNING ",
-            objects::account_columns!()
-        ))
-        .bind(&input.slug)
-        .bind(display_name)
-        .fetch_one(pool)
-        .await
-        .map_err(
-            |e| match e.as_database_error().and_then(|d| d.constraint()) {
-                Some("accounts_slug_key") => {
-                    format!("account {} already exists", input.slug).into()
-                }
-                Some("accounts_slug_check") => {
-                    "slug must be lowercase letters, digits and dashes".into()
-                }
-                _ => async_graphql::Error::from(e),
-            },
-        )?;
+        let account = Account::create(pool, &input.slug, &display_name)
+            .await
+            .map_err(
+                |e| match e.as_database_error().and_then(|d| d.constraint()) {
+                    Some("accounts_slug_key") => {
+                        format!("account {} already exists", input.slug).into()
+                    }
+                    Some("accounts_slug_check") => {
+                        "slug must be lowercase letters, digits and dashes".into()
+                    }
+                    _ => async_graphql::Error::from(e),
+                },
+            )?;
 
         Ok(CreateAccountPayload { account })
     }
@@ -115,15 +109,7 @@ impl MutationRoot {
             .await?
             .ok_or("account not found")?;
 
-        let export = sqlx::query_as(concat!(
-            "INSERT INTO exports (account_id, label, as_of) VALUES ($1, $2, $3) RETURNING ",
-            objects::export_columns!()
-        ))
-        .bind(account.id)
-        .bind(&input.label)
-        .bind(input.as_of)
-        .fetch_one(pool)
-        .await?;
+        let export = Export::create(pool, account.id, &input.label, input.as_of).await?;
 
         Ok(CreateExportPayload { export })
     }
@@ -194,11 +180,9 @@ impl MutationRoot {
         let pool = ctx.data::<PgPool>()?;
         let export_id = decode_as(&input.export_id, NodeType::Export)?;
 
-        let export = sqlx::query_as(concat!("UPDATE exports SET finalized_at = coalesce(finalized_at, now()) WHERE id = $1 RETURNING ", objects::export_columns!()))
-        .bind(export_id)
-        .fetch_optional(pool)
-        .await?
-        .ok_or("export not found")?;
+        let export = Export::finalize(pool, export_id)
+            .await?
+            .ok_or("export not found")?;
 
         Ok(FinalizeExportPayload { export })
     }

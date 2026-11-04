@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO basic_plays (account_id, file_id, end_time, artist, track, ms_played)\n         SELECT $1, $2, u.end_time, u.artist, u.track, u.ms_played\n         FROM UNNEST($3::timestamptz[], $4::text[], $5::text[], $6::int[])\n            AS u(end_time, artist, track, ms_played)\n         ON CONFLICT DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "TimestamptzArray",
+        "TextArray",
+        "TextArray",
+        "Int4Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e72ef90bb8a057b7b7daecfcd17ec3dacb10b2d1c73f43f66421f564f8a30edf"
+}

@@ -1,9 +1,10 @@
-//! Merge behaviour against a real database. Requires DATABASE_URL (docker compose up db);
-//! sqlx::test creates and migrates a fresh database per test.
+//! Extended streaming history merge behaviour against a real database.
+
+mod common;
 
 use chrono::{DateTime, Utc};
-use spotify_export::FileKind;
-use spotify_server::import::{FileUpload, ImportOutcome, import_file, sha256_hex};
+use common::Fixture;
+use spotify_server::import::ImportOutcome;
 use sqlx::PgPool;
 
 fn play(ts: &str, uri: &str, ms: i64, name: &str, reason_end: Option<&str>) -> serde_json::Value {
@@ -27,72 +28,26 @@ fn play(ts: &str, uri: &str, ms: i64, name: &str, reason_end: Option<&str>) -> s
     })
 }
 
-struct Fixture {
-    pool: PgPool,
-    account_id: i64,
+struct Play {
+    ts: DateTime<Utc>,
+    reason_end: Option<String>,
 }
 
-impl Fixture {
-    async fn new(pool: PgPool) -> Self {
-        let account_id = sqlx::query_scalar(
-            "INSERT INTO accounts (slug, display_name) VALUES ('me', 'me') RETURNING id",
-        )
-        .fetch_one(&pool)
-        .await
-        .unwrap();
-        Self { pool, account_id }
-    }
+async fn plays(pool: &PgPool) -> Vec<Play> {
+    sqlx::query_as!(
+        Play,
+        "SELECT ts, reason_end FROM plays ORDER BY ts, ms_played"
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap()
+}
 
-    async fn import(&self, as_of: &str, rows: &[serde_json::Value]) -> ImportOutcome {
-        let as_of: DateTime<Utc> = as_of.parse().unwrap();
-        let export_id: i64 = sqlx::query_scalar(
-            "INSERT INTO exports (account_id, label, as_of) VALUES ($1, 'test', $2) RETURNING id",
-        )
-        .bind(self.account_id)
-        .bind(as_of)
-        .fetch_one(&self.pool)
-        .await
-        .unwrap();
-
-        let bytes = serde_json::to_vec(rows).unwrap();
-        let sha256 = sha256_hex(&bytes);
-        import_file(
-            &self.pool,
-            FileUpload {
-                account_id: self.account_id,
-                export_id,
-                as_of,
-                name: "Streaming_History_Audio_2023_0.json",
-                kind: FileKind::ExtendedAudio,
-                sha256: &sha256,
-                bytes: &bytes,
-            },
-        )
+async fn item_name(pool: &PgPool, uri: &str) -> Option<String> {
+    sqlx::query_scalar!("SELECT name FROM items WHERE uri = $1", uri)
+        .fetch_one(pool)
         .await
         .unwrap()
-    }
-
-    async fn plays(&self) -> Vec<(DateTime<Utc>, Option<String>, i32, Option<String>)> {
-        sqlx::query_as(
-            "SELECT ts, item_uri, ms_played, reason_end FROM plays ORDER BY ts, ms_played",
-        )
-        .fetch_all(&self.pool)
-        .await
-        .unwrap()
-    }
-
-    async fn counts(&self, outcome: ImportOutcome) -> (i32, i32, i32) {
-        let ImportOutcome::Imported { file_id } = outcome else {
-            panic!("expected Imported, got {outcome:?}");
-        };
-        sqlx::query_as(
-            "SELECT rows_total, rows_inserted, rows_merged FROM export_files WHERE id = $1",
-        )
-        .bind(file_id)
-        .fetch_one(&self.pool)
-        .await
-        .unwrap()
-    }
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -129,19 +84,16 @@ async fn merges_plays_seconds_apart(pool: PgPool) {
         .await;
     assert_eq!(f.counts(newer).await, (1, 0, 1));
 
-    let plays = f.plays().await;
+    let plays = plays(&f.pool).await;
     assert_eq!(plays.len(), 1);
     assert_eq!(
-        plays[0].0.to_rfc3339(),
+        plays[0].ts.to_rfc3339(),
         "2023-05-01T10:00:00+00:00",
         "newer ts wins"
     );
-    assert_eq!(plays[0].3.as_deref(), Some("trackdone"));
+    assert_eq!(plays[0].reason_end.as_deref(), Some("trackdone"));
 
-    let name: String = sqlx::query_scalar("SELECT name FROM items WHERE uri = 'spotify:track:a'")
-        .fetch_one(&f.pool)
-        .await
-        .unwrap();
+    let name = item_name(&f.pool, "spotify:track:a").await.unwrap();
     assert_eq!(name, "Timber");
 }
 
@@ -222,15 +174,12 @@ async fn older_export_does_not_overwrite_newer(pool: PgPool) {
         .await;
     assert_eq!(f.counts(older).await, (1, 0, 1));
 
-    let plays = f.plays().await;
+    let plays = plays(&f.pool).await;
     assert_eq!(plays.len(), 1);
-    assert_eq!(plays[0].0.to_rfc3339(), "2023-05-01T10:00:00+00:00");
-    assert_eq!(plays[0].3.as_deref(), Some("trackdone"));
+    assert_eq!(plays[0].ts.to_rfc3339(), "2023-05-01T10:00:00+00:00");
+    assert_eq!(plays[0].reason_end.as_deref(), Some("trackdone"));
 
-    let name: String = sqlx::query_scalar("SELECT name FROM items WHERE uri = 'spotify:track:a'")
-        .fetch_one(&f.pool)
-        .await
-        .unwrap();
+    let name = item_name(&f.pool, "spotify:track:a").await.unwrap();
     assert_eq!(name, "Timber", "older export keeps newer item name");
 }
 
@@ -260,7 +209,7 @@ async fn keeps_distinct_plays_and_collapses_exact_duplicates(pool: PgPool) {
         )
         .await;
     assert_eq!(f.counts(outcome).await, (4, 3, 0));
-    assert_eq!(f.plays().await.len(), 3);
+    assert_eq!(plays(&f.pool).await.len(), 3);
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -302,7 +251,7 @@ async fn two_rows_never_merge_into_one_play(pool: PgPool) {
         )
         .await;
     assert_eq!(f.counts(outcome).await, (2, 1, 1));
-    assert_eq!(f.plays().await.len(), 2);
+    assert_eq!(plays(&f.pool).await.len(), 2);
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -324,5 +273,5 @@ async fn same_file_twice_is_a_duplicate(pool: PgPool) {
         f.import("2024-01-18T00:00:00Z", &rows).await,
         ImportOutcome::Duplicate { .. }
     ));
-    assert_eq!(f.plays().await.len(), 1);
+    assert_eq!(plays(&f.pool).await.len(), 1);
 }

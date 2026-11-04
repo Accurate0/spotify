@@ -219,7 +219,7 @@ pub async fn run(client: &Client, account: &str, path: &Path, dry_run: bool) -> 
     }
 
     println!(
-        "\n{} files imported ({} rows: {} new plays, {} merged), {} skipped{}",
+        "\n{} files imported ({} rows: {} new, {} merged), {} skipped{}",
         totals.files,
         totals.rows,
         totals.inserted,

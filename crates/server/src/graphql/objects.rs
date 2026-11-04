@@ -1,28 +1,8 @@
 use async_graphql::{Context, Enum, ID, Object};
 use chrono::{DateTime, Utc};
-use sqlx::{FromRow, PgPool};
+use sqlx::PgPool;
 
 use super::node::{NodeType, encode};
-
-macro_rules! account_columns {
-    () => {
-        "id, slug, display_name, spotify_username"
-    };
-}
-
-macro_rules! export_columns {
-    () => {
-        "id, account_id, label, as_of, created_at, finalized_at"
-    };
-}
-
-macro_rules! export_file_columns {
-    () => {
-        "id, export_id, name, kind, sha256, rows_total, rows_inserted, rows_merged, imported_at"
-    };
-}
-
-pub(crate) use {account_columns, export_columns};
 
 #[derive(Enum, Clone, Copy, PartialEq, Eq)]
 #[graphql(remote = "spotify_export::FileKind")]
@@ -40,7 +20,7 @@ pub enum FileKind {
     Private,
 }
 
-#[derive(Clone, FromRow)]
+#[derive(Clone)]
 pub struct Account {
     pub id: i64,
     pub slug: String,
@@ -50,24 +30,43 @@ pub struct Account {
 
 impl Account {
     pub async fn by_id(pool: &PgPool, id: i64) -> sqlx::Result<Option<Self>> {
-        sqlx::query_as(concat!(
-            "SELECT ",
-            account_columns!(),
-            " FROM accounts WHERE id = $1"
-        ))
-        .bind(id)
+        sqlx::query_as!(
+            Self,
+            "SELECT id, slug, display_name, spotify_username FROM accounts WHERE id = $1",
+            id
+        )
         .fetch_optional(pool)
         .await
     }
 
     pub async fn by_slug(pool: &PgPool, slug: &str) -> sqlx::Result<Option<Self>> {
-        sqlx::query_as(concat!(
-            "SELECT ",
-            account_columns!(),
-            " FROM accounts WHERE slug = $1"
-        ))
-        .bind(slug)
+        sqlx::query_as!(
+            Self,
+            "SELECT id, slug, display_name, spotify_username FROM accounts WHERE slug = $1",
+            slug
+        )
         .fetch_optional(pool)
+        .await
+    }
+
+    pub async fn all(pool: &PgPool) -> sqlx::Result<Vec<Self>> {
+        sqlx::query_as!(
+            Self,
+            "SELECT id, slug, display_name, spotify_username FROM accounts ORDER BY slug"
+        )
+        .fetch_all(pool)
+        .await
+    }
+
+    pub async fn create(pool: &PgPool, slug: &str, display_name: &str) -> sqlx::Result<Self> {
+        sqlx::query_as!(
+            Self,
+            "INSERT INTO accounts (slug, display_name) VALUES ($1, $2)
+             RETURNING id, slug, display_name, spotify_username",
+            slug,
+            display_name
+        )
+        .fetch_one(pool)
         .await
     }
 }
@@ -92,28 +91,28 @@ impl Account {
 
     async fn play_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
         let pool = ctx.data::<PgPool>()?;
-        Ok(
-            sqlx::query_scalar("SELECT count(*) FROM plays WHERE account_id = $1")
-                .bind(self.id)
-                .fetch_one(pool)
-                .await?,
+        Ok(sqlx::query_scalar!(
+            r#"SELECT count(*) AS "count!" FROM plays WHERE account_id = $1"#,
+            self.id
         )
+        .fetch_one(pool)
+        .await?)
     }
 
     async fn exports(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Export>> {
         let pool = ctx.data::<PgPool>()?;
-        Ok(sqlx::query_as(concat!(
-            "SELECT ",
-            export_columns!(),
-            " FROM exports WHERE account_id = $1 ORDER BY as_of DESC"
-        ))
-        .bind(self.id)
+        Ok(sqlx::query_as!(
+            Export,
+            "SELECT id, account_id, label, as_of, created_at, finalized_at
+             FROM exports WHERE account_id = $1 ORDER BY as_of DESC",
+            self.id
+        )
         .fetch_all(pool)
         .await?)
     }
 }
 
-#[derive(Clone, FromRow)]
+#[derive(Clone)]
 pub struct Export {
     pub id: i64,
     pub account_id: i64,
@@ -125,12 +124,41 @@ pub struct Export {
 
 impl Export {
     pub async fn by_id(pool: &PgPool, id: i64) -> sqlx::Result<Option<Self>> {
-        sqlx::query_as(concat!(
-            "SELECT ",
-            export_columns!(),
-            " FROM exports WHERE id = $1"
-        ))
-        .bind(id)
+        sqlx::query_as!(
+            Self,
+            "SELECT id, account_id, label, as_of, created_at, finalized_at
+             FROM exports WHERE id = $1",
+            id
+        )
+        .fetch_optional(pool)
+        .await
+    }
+
+    pub async fn create(
+        pool: &PgPool,
+        account_id: i64,
+        label: &str,
+        as_of: DateTime<Utc>,
+    ) -> sqlx::Result<Self> {
+        sqlx::query_as!(
+            Self,
+            "INSERT INTO exports (account_id, label, as_of) VALUES ($1, $2, $3)
+             RETURNING id, account_id, label, as_of, created_at, finalized_at",
+            account_id,
+            label,
+            as_of
+        )
+        .fetch_one(pool)
+        .await
+    }
+
+    pub async fn finalize(pool: &PgPool, id: i64) -> sqlx::Result<Option<Self>> {
+        sqlx::query_as!(
+            Self,
+            "UPDATE exports SET finalized_at = coalesce(finalized_at, now()) WHERE id = $1
+             RETURNING id, account_id, label, as_of, created_at, finalized_at",
+            id
+        )
         .fetch_optional(pool)
         .await
     }
@@ -166,18 +194,19 @@ impl Export {
 
     async fn files(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<ExportFile>> {
         let pool = ctx.data::<PgPool>()?;
-        Ok(sqlx::query_as(concat!(
-            "SELECT ",
-            export_file_columns!(),
-            " FROM export_files WHERE export_id = $1 ORDER BY name"
-        ))
-        .bind(self.id)
+        Ok(sqlx::query_as!(
+            ExportFile,
+            "SELECT id, export_id, name, kind, sha256, rows_total, rows_inserted, rows_merged,
+                    imported_at
+             FROM export_files WHERE export_id = $1 ORDER BY name",
+            self.id
+        )
         .fetch_all(pool)
         .await?)
     }
 }
 
-#[derive(Clone, FromRow)]
+#[derive(Clone)]
 pub struct ExportFile {
     pub id: i64,
     pub export_id: i64,
@@ -192,12 +221,13 @@ pub struct ExportFile {
 
 impl ExportFile {
     pub async fn by_id(pool: &PgPool, id: i64) -> sqlx::Result<Option<Self>> {
-        sqlx::query_as(concat!(
-            "SELECT ",
-            export_file_columns!(),
-            " FROM export_files WHERE id = $1"
-        ))
-        .bind(id)
+        sqlx::query_as!(
+            Self,
+            "SELECT id, export_id, name, kind, sha256, rows_total, rows_inserted, rows_merged,
+                    imported_at
+             FROM export_files WHERE id = $1",
+            id
+        )
         .fetch_optional(pool)
         .await
     }

@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO inferences (account_id, file_id, value)\n         SELECT $1, $2, u.value FROM UNNEST($3::text[]) AS u(value)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "eff56601ea022d7dc5fbe061166441edb55a7c38c7977534b9691f28ab556adb"
+}

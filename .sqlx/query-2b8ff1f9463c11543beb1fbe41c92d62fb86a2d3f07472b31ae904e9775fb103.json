@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT ts, reason_end FROM plays ORDER BY ts, ms_played",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "ts",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "plays",
+            "name": "ts"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "reason_end",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "plays",
+            "name": "reason_end"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "2b8ff1f9463c11543beb1fbe41c92d62fb86a2d3f07472b31ae904e9775fb103"
+}

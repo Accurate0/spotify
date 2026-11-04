@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO library_items (account_id, file_id, kind, uri, name, artist, album)\n         SELECT $1, $2, u.kind, u.uri, u.name, u.artist, u.album\n         FROM UNNEST($3::text[], $4::text[], $5::text[], $6::text[], $7::text[])\n            AS u(kind, uri, name, artist, album)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "TextArray",
+        "TextArray",
+        "TextArray",
+        "TextArray",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6e3a33ec3ecb6da5a55c4dda314dec6e13ead8da2c29edc076ef96036ec789eb"
+}

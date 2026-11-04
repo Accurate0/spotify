@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO marquee (account_id, file_id, artist, segment)\n         SELECT $1, $2, u.artist, u.segment\n         FROM UNNEST($3::text[], $4::text[]) AS u(artist, segment)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "TextArray",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cb772280236140ab5fcc95676dc00a8239841de7854e749cfb15b3bf25c7264b"
+}

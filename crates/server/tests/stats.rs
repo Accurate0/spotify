@@ -323,3 +323,96 @@ async fn item_artist_and_search(pool: PgPool) {
     );
     assert_eq!(nodes["nodes"][0]["__typename"], "Item");
 }
+
+#[sqlx::test(migrations = "./migrations")]
+async fn insights(pool: PgPool) {
+    let (_f, schema) = setup(pool).await;
+    let schema = &schema;
+    let me = account_id(schema, "me").await;
+
+    let data = run(
+        schema,
+        r#"query($filter: StatsFilter!, $me: ID!) {
+            stats(filter: $filter) {
+                firstPlay { ts item { name } }
+                listeningDays { activeDays spanDays longestStreak { start end days } latestStreak { days } }
+                topDays(first: 1) { date minutesPlayed topArtist { name } }
+                onRepeat(first: 1) { date plays item { name } }
+                sessions { count longest { plays } }
+                device: breakdown(by: DEVICE) { label plays }
+                ends: breakdown(by: END_REASON) { key label }
+                discoveries { edges { node { artist { name } firstItem { name } } } }
+            }
+            all: stats(filter: { accounts: [$me], minMsPlayed: 0 }) {
+                mostSkipped(minPlays: 2) { item { name } skips plays }
+            }
+        }"#,
+        json!({"filter": {"accounts": [me]}, "me": me}),
+    )
+    .await;
+    let stats = &data["stats"];
+
+    assert_eq!(stats["firstPlay"]["item"]["name"], "A1");
+    // Perth days: Jan 1, 2, 3 (a streak of 3) and Feb 1.
+    assert_eq!(
+        stats["listeningDays"],
+        json!({
+            "activeDays": 4,
+            "spanDays": 32,
+            "longestStreak": {"start": "2024-01-01", "end": "2024-01-03", "days": 3},
+            "latestStreak": {"days": 1},
+        })
+    );
+    assert_eq!(
+        stats["topDays"][0],
+        json!({"date": "2024-02-01", "minutesPlayed": 4, "topArtist": {"name": "Beta"}})
+    );
+    assert_eq!(stats["onRepeat"][0]["plays"], 1);
+    // Plays days apart never share a session.
+    assert_eq!(stats["sessions"]["count"], 4);
+    assert_eq!(stats["device"], json!([{"label": "Android", "plays": 4}]));
+    assert_eq!(
+        stats["ends"],
+        json!([{"key": "trackdone", "label": "Previous track finished"}])
+    );
+    assert_eq!(
+        stats["discoveries"]["edges"][0]["node"],
+        json!({"artist": {"name": "Alpha"}, "firstItem": {"name": "A1"}})
+    );
+
+    // a1 and b1 each have one skip in two plays (b1's is the 5s play, which only counts
+    // because skips ignore the minimum play length); the tie goes to the lower URI.
+    let skipped = &data["all"]["mostSkipped"];
+    assert_eq!(skipped[0]["item"]["name"], "A1");
+    assert_eq!(skipped[0]["skips"], 1);
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn discoveries_respect_first_play_and_forgotten_needs_a_year(pool: PgPool) {
+    let (_f, schema) = setup(pool).await;
+    let schema = &schema;
+    let me = account_id(schema, "me").await;
+
+    // Beta was first heard on Feb 1, so a February-only range discovers Beta but not Alpha.
+    let feb = run(
+        schema,
+        r#"query($filter: StatsFilter!) {
+            stats(filter: $filter) { discoveries { edges { node { artist { name } } } } }
+        }"#,
+        json!({"filter": {"accounts": [me], "from": "2024-01-31T16:00:00Z", "to": "2024-02-29T16:00:00Z"}}),
+    )
+    .await;
+    assert_eq!(
+        feb["stats"]["discoveries"]["edges"],
+        json!([{"node": {"artist": {"name": "Beta"}}}])
+    );
+
+    // All plays fall within two months, so nothing is "forgotten".
+    let forgotten = run(
+        schema,
+        r#"{ stats { forgottenArtists { edges { node { artist { name } } } } } }"#,
+        json!({}),
+    )
+    .await;
+    assert_eq!(forgotten["stats"]["forgottenArtists"]["edges"], json!([]));
+}

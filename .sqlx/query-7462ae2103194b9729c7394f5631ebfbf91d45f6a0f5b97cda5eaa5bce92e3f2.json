@@ -1,0 +1,79 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH days AS (\n               SELECT DISTINCT (ts AT TIME ZONE $8)::date AS d\n               FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)\n           ),\n           -- Consecutive days share d - row_number(), which identifies each run.\n           runs AS (\n               SELECT min(d) AS start_d, max(d) AS end_d, count(*)::int AS len\n               FROM (SELECT d, d - (row_number() OVER (ORDER BY d))::int AS grp FROM days) g\n               GROUP BY grp\n           )\n           SELECT (SELECT count(*)::int FROM days) AS \"active!\",\n                  (SELECT max(d) - min(d) + 1 FROM days) AS span,\n                  l.start_d AS longest_start, l.end_d AS longest_end, l.len AS longest_len,\n                  r.start_d AS latest_start, r.end_d AS latest_end, r.len AS latest_len\n           FROM (SELECT 1) one\n           LEFT JOIN LATERAL (SELECT * FROM runs ORDER BY len DESC, end_d DESC LIMIT 1) l ON TRUE\n           LEFT JOIN LATERAL (SELECT * FROM runs ORDER BY end_d DESC LIMIT 1) r ON TRUE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "active!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "span",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "longest_start",
+        "type_info": "Date",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "longest_end",
+        "type_info": "Date",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "longest_len",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "latest_start",
+        "type_info": "Date",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "latest_end",
+        "type_info": "Date",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "latest_len",
+        "type_info": "Int4",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8Array",
+        "Timestamptz",
+        "Timestamptz",
+        "TextArray",
+        "Int4",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "7462ae2103194b9729c7394f5631ebfbf91d45f6a0f5b97cda5eaa5bce92e3f2"
+}

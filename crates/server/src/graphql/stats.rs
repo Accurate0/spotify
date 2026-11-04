@@ -1,6 +1,5 @@
-//! Listening stats. Every query reads `scoped_plays(...)` (see migrations/0003_stats.sql),
-//! whose first seven parameters are always the `Scope`; `scoped!` binds them so queries only
-//! list their own parameters, starting at `$8`.
+//! Listening stats. Every query reads `scoped_plays(...)` (see migrations/0003_stats.sql)
+//! through the `scoped!` macro in graphql/mod.rs.
 
 use async_graphql::dataloader::DataLoader;
 use async_graphql::{Context, Enum, ID, InputObject, Object, SimpleObject};
@@ -8,40 +7,14 @@ use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 
 use super::catalog::{Album, Artist, Item};
+use super::insights::{
+    self, BreakdownDimension, BreakdownRow, DayStat, Discovery, ForgottenArtist, ListeningDays,
+    RepeatDay, Sessions, SkippedItem,
+};
 use super::loaders::{AccountLoader, ItemLoader};
 use super::node::{NodeType, decode_row_id};
 use super::objects::Account;
 use super::page::{Page, PlainConnection, RankedConnection};
-
-macro_rules! scoped {
-    (query_as!($ty:ident), $scope:expr, $sql:literal $(, $arg:expr)* $(,)?) => {
-        sqlx::query_as!(
-            $ty,
-            $sql,
-            &$scope.accounts,
-            $scope.from,
-            $scope.to,
-            &$scope.kinds,
-            $scope.min_ms,
-            $scope.item_uri.as_deref(),
-            $scope.artist.as_deref()
-            $(, $arg)*
-        )
-    };
-    (query!, $scope:expr, $sql:literal $(, $arg:expr)* $(,)?) => {
-        sqlx::query!(
-            $sql,
-            &$scope.accounts,
-            $scope.from,
-            $scope.to,
-            &$scope.kinds,
-            $scope.min_ms,
-            $scope.item_uri.as_deref(),
-            $scope.artist.as_deref()
-            $(, $arg)*
-        )
-    };
-}
 
 const DEFAULT_TIME_ZONE: &str = "Australia/Perth";
 /// Spotify counts a play as a stream once it passes 30 seconds.
@@ -110,14 +83,14 @@ impl StatsFilter {
 /// Resolved filter, plus optional narrowing to one item or artist.
 #[derive(Clone)]
 pub struct Scope {
-    accounts: Vec<i64>,
-    from: Option<DateTime<Utc>>,
-    to: Option<DateTime<Utc>>,
-    kinds: Vec<String>,
-    min_ms: i32,
-    time_zone: String,
-    item_uri: Option<String>,
-    artist: Option<String>,
+    pub(super) accounts: Vec<i64>,
+    pub(super) from: Option<DateTime<Utc>>,
+    pub(super) to: Option<DateTime<Utc>>,
+    pub(super) kinds: Vec<String>,
+    pub(super) min_ms: i32,
+    pub(super) time_zone: String,
+    pub(super) item_uri: Option<String>,
+    pub(super) artist: Option<String>,
 }
 
 impl Scope {
@@ -188,14 +161,14 @@ pub struct HeatmapCell {
 }
 
 pub struct Play {
-    account_id: i64,
-    ts: DateTime<Utc>,
-    item_uri: Option<String>,
-    name: Option<String>,
-    artist: Option<String>,
-    ms_played: i32,
-    skipped: Option<bool>,
-    is_extended: bool,
+    pub(super) account_id: i64,
+    pub(super) ts: DateTime<Utc>,
+    pub(super) item_uri: Option<String>,
+    pub(super) name: Option<String>,
+    pub(super) artist: Option<String>,
+    pub(super) ms_played: i32,
+    pub(super) skipped: Option<bool>,
+    pub(super) is_extended: bool,
 }
 
 #[Object]
@@ -482,5 +455,79 @@ impl Stats {
         .await?;
 
         Ok(page.plain(rows))
+    }
+
+    /// The earliest play: for an artist or track, when you first heard it.
+    async fn first_play(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Play>> {
+        Ok(insights::first_play(ctx.data::<PgPool>()?, &self.scope).await?)
+    }
+
+    /// Active days and streaks of consecutive days.
+    async fn listening_days(&self, ctx: &Context<'_>) -> async_graphql::Result<ListeningDays> {
+        Ok(insights::listening_days(ctx.data::<PgPool>()?, &self.scope).await?)
+    }
+
+    /// Days with the most listening, each with its top artist.
+    async fn top_days(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default = 10)] first: i32,
+    ) -> async_graphql::Result<Vec<DayStat>> {
+        Ok(insights::top_days(ctx.data::<PgPool>()?, &self.scope, first).await?)
+    }
+
+    /// Items played most within a single day, one entry per item.
+    async fn on_repeat(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default = 10)] first: i32,
+    ) -> async_graphql::Result<Vec<RepeatDay>> {
+        Ok(insights::on_repeat(ctx.data::<PgPool>()?, &self.scope, first).await?)
+    }
+
+    /// Highest skip rates among items with at least `minPlays` plays. Counts every play,
+    /// whatever the filter's minimum play length.
+    async fn most_skipped(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default = 10)] first: i32,
+        #[graphql(default = 10)] min_plays: i32,
+    ) -> async_graphql::Result<Vec<SkippedItem>> {
+        Ok(insights::most_skipped(ctx.data::<PgPool>()?, &self.scope, first, min_plays).await?)
+    }
+
+    /// Listening split by device, country, shuffle, offline or start/end reason.
+    async fn breakdown(
+        &self,
+        ctx: &Context<'_>,
+        by: BreakdownDimension,
+    ) -> async_graphql::Result<Vec<BreakdownRow>> {
+        Ok(insights::breakdown(ctx.data::<PgPool>()?, &self.scope, by).await?)
+    }
+
+    async fn sessions(&self, ctx: &Context<'_>) -> async_graphql::Result<Sessions> {
+        Ok(insights::sessions(ctx.data::<PgPool>()?, &self.scope).await?)
+    }
+
+    /// Artists first heard within the date range, by listening in the range.
+    async fn discoveries(
+        &self,
+        ctx: &Context<'_>,
+        first: Option<i32>,
+        after: Option<String>,
+    ) -> async_graphql::Result<PlainConnection<Discovery>> {
+        let page = Page::new(first, after, 10)?;
+        Ok(insights::discoveries(ctx.data::<PgPool>()?, &self.scope, &page).await?)
+    }
+
+    /// Artists with heavy listening but nothing in the last year of the range.
+    async fn forgotten_artists(
+        &self,
+        ctx: &Context<'_>,
+        first: Option<i32>,
+        after: Option<String>,
+    ) -> async_graphql::Result<PlainConnection<ForgottenArtist>> {
+        let page = Page::new(first, after, 10)?;
+        Ok(insights::forgotten_artists(ctx.data::<PgPool>()?, &self.scope, &page).await?)
     }
 }

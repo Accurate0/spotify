@@ -7,6 +7,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 pub mod schema {}
 
 cynic::impl_scalar!(DateTime<Utc>, schema::DateTime);
+cynic::impl_scalar!(chrono::NaiveDate, schema::NaiveDate);
 
 /// Placeholder for a multipart file. Per the GraphQL multipart request spec the variable is
 /// sent as `null` and the file is attached separately, mapped onto `variables.file`.

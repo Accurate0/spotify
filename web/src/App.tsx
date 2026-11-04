@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 // Pages load on demand; the charts library only ships with pages that draw charts.
 const OverviewPage = lazy(() => import("./pages/OverviewPage"));
 const TopPage = lazy(() => import("./pages/TopPage"));
+const InsightsPage = lazy(() => import("./pages/InsightsPage"));
 const SearchPage = lazy(() => import("./pages/SearchPage"));
 const ItemPage = lazy(() => import("./pages/ItemPage"));
 const ArtistPage = lazy(() => import("./pages/ArtistPage"));
@@ -26,6 +27,7 @@ function Tabs() {
   const tabs = [
     { to: { pathname: "/", search: keep }, label: "Overview", end: true },
     { to: { pathname: "/top/artists", search: keep }, label: "Top", section: "/top/" },
+    { to: { pathname: "/insights", search: keep }, label: "Insights" },
     { to: { pathname: "/search" }, label: "Search" },
   ];
 
@@ -77,6 +79,7 @@ export default function App() {
           <Route path="/" element={<StatsLayout><OverviewPage /></StatsLayout>} />
           <Route path="/top" element={<Navigate to="/top/artists" replace />} />
           <Route path="/top/:kind" element={<StatsLayout><TopPage /></StatsLayout>} />
+          <Route path="/insights" element={<StatsLayout><InsightsPage /></StatsLayout>} />
           <Route path="/track/:uri" element={<StatsLayout><ItemPage /></StatsLayout>} />
           <Route path="/artist/:name" element={<StatsLayout><ArtistPage /></StatsLayout>} />
           <Route

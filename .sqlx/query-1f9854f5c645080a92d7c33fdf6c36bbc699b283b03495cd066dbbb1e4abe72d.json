@@ -1,0 +1,98 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT i.uri, i.kind, i.name, i.artist, i.album,\n                  count(*)::int AS \"plays!\",\n                  count(*) FILTER (WHERE p.skipped)::int AS \"skips!\"\n           FROM scoped_plays($1, $2, $3, $4, least($5, 0), $6, $7) p\n           JOIN items i ON i.uri = p.item_uri\n           WHERE p.skipped IS NOT NULL\n           GROUP BY i.uri\n           HAVING count(*) >= $8\n           ORDER BY count(*) FILTER (WHERE p.skipped)::float8 / count(*) DESC, count(*) DESC, i.uri\n           LIMIT $9",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "uri",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "items",
+            "name": "uri"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "kind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "items",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "items",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "artist",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "items",
+            "name": "artist"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "album",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "items",
+            "name": "album"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "plays!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "skips!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8Array",
+        "Timestamptz",
+        "Timestamptz",
+        "TextArray",
+        "Int4",
+        "Text",
+        "Text",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "1f9854f5c645080a92d7c33fdf6c36bbc699b283b03495cd066dbbb1e4abe72d"
+}

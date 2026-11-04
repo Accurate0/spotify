@@ -4,6 +4,7 @@ import type { ArtistPageQuery } from "./__generated__/ArtistPageQuery.graphql";
 import type { ArtistPageTracks_artist$key } from "./__generated__/ArtistPageTracks_artist.graphql";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import StatTiles from "@/components/StatTiles";
+import Firsts from "@/components/Firsts";
 import TimelineChart from "@/components/TimelineChart";
 import RankRow from "@/components/RankRow";
 import { useFilter } from "@/lib/filter";
@@ -87,6 +88,7 @@ export default function ArtistPage() {
             summary {
               ...StatTiles_summary
             }
+            ...Firsts_stats
             timeline(bucket: MONTH) {
               ...TimelineChart_points
             }
@@ -111,6 +113,7 @@ export default function ArtistPage() {
       </header>
 
       <StatTiles summary={artist.stats.summary} scope="artist" />
+      <Firsts stats={artist.stats} showFirstTrack />
 
       <Card>
         <CardHeader>

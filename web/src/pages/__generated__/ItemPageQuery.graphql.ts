@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<e89d818d3ff36d3ce42d3a5e145fb697>>
+ * @generated SignedSource<<2955855061c8a13f2103ab43b3c652a3>>
  * @lightSyntaxTransform
  */
 
@@ -40,6 +40,7 @@ export type ItemPageQuery$data = {
       readonly timeline: ReadonlyArray<{
         readonly " $fragmentSpreads": FragmentRefs<"TimelineChart_points">;
       }>;
+      readonly " $fragmentSpreads": FragmentRefs<"Firsts_stats">;
     };
     readonly uri: string;
     readonly " $fragmentSpreads": FragmentRefs<"PlayHistory_item">;
@@ -144,7 +145,21 @@ v13 = {
   "name": "minutesPlayed",
   "storageKey": null
 },
-v14 = [
+v14 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "ts",
+  "storageKey": null
+},
+v15 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "start",
+  "storageKey": null
+},
+v16 = [
   {
     "kind": "Literal",
     "name": "first",
@@ -207,6 +222,11 @@ return {
                   }
                 ],
                 "storageKey": null
+              },
+              {
+                "args": null,
+                "kind": "FragmentSpread",
+                "name": "Firsts_stats"
               },
               {
                 "alias": null,
@@ -332,19 +352,109 @@ return {
               },
               {
                 "alias": null,
-                "args": (v10/*:: as any*/),
-                "concreteType": "TimelinePoint",
+                "args": null,
+                "concreteType": "Play",
                 "kind": "LinkedField",
-                "name": "timeline",
+                "name": "firstPlay",
+                "plural": false,
+                "selections": [
+                  (v14/*:: as any*/),
+                  {
+                    "alias": null,
+                    "args": null,
+                    "concreteType": "Item",
+                    "kind": "LinkedField",
+                    "name": "item",
+                    "plural": false,
+                    "selections": [
+                      (v3/*:: as any*/),
+                      (v5/*:: as any*/),
+                      (v11/*:: as any*/)
+                    ],
+                    "storageKey": null
+                  }
+                ],
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": [
+                  {
+                    "kind": "Literal",
+                    "name": "first",
+                    "value": 1
+                  }
+                ],
+                "concreteType": "DayStat",
+                "kind": "LinkedField",
+                "name": "topDays",
                 "plural": true,
                 "selections": [
                   {
                     "alias": null,
                     "args": null,
                     "kind": "ScalarField",
-                    "name": "start",
+                    "name": "date",
                     "storageKey": null
                   },
+                  (v12/*:: as any*/),
+                  (v13/*:: as any*/)
+                ],
+                "storageKey": "topDays(first:1)"
+              },
+              {
+                "alias": null,
+                "args": null,
+                "concreteType": "ListeningDays",
+                "kind": "LinkedField",
+                "name": "listeningDays",
+                "plural": false,
+                "selections": [
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "activeDays",
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
+                    "concreteType": "Streak",
+                    "kind": "LinkedField",
+                    "name": "longestStreak",
+                    "plural": false,
+                    "selections": [
+                      {
+                        "alias": null,
+                        "args": null,
+                        "kind": "ScalarField",
+                        "name": "days",
+                        "storageKey": null
+                      },
+                      (v15/*:: as any*/),
+                      {
+                        "alias": null,
+                        "args": null,
+                        "kind": "ScalarField",
+                        "name": "end",
+                        "storageKey": null
+                      }
+                    ],
+                    "storageKey": null
+                  }
+                ],
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": (v10/*:: as any*/),
+                "concreteType": "TimelinePoint",
+                "kind": "LinkedField",
+                "name": "timeline",
+                "plural": true,
+                "selections": [
+                  (v15/*:: as any*/),
                   (v12/*:: as any*/),
                   (v13/*:: as any*/)
                 ],
@@ -352,7 +462,7 @@ return {
               },
               {
                 "alias": null,
-                "args": (v14/*:: as any*/),
+                "args": (v16/*:: as any*/),
                 "concreteType": "PlayConnection",
                 "kind": "LinkedField",
                 "name": "plays",
@@ -374,13 +484,7 @@ return {
                         "name": "node",
                         "plural": false,
                         "selections": [
-                          {
-                            "alias": null,
-                            "args": null,
-                            "kind": "ScalarField",
-                            "name": "ts",
-                            "storageKey": null
-                          },
+                          (v14/*:: as any*/),
                           {
                             "alias": null,
                             "args": null,
@@ -464,7 +568,7 @@ return {
               },
               {
                 "alias": null,
-                "args": (v14/*:: as any*/),
+                "args": (v16/*:: as any*/),
                 "filters": null,
                 "handle": "connection",
                 "key": "PlayHistory_plays",
@@ -481,16 +585,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "c79703f7e9c1b7fc20e8063fd3cd9a4a",
+    "cacheID": "57b072aa84f444a582cd8c47ce34e36e",
     "id": null,
     "metadata": {},
     "name": "ItemPageQuery",
     "operationKind": "query",
-    "text": "query ItemPageQuery(\n  $uri: String!\n  $filter: StatsFilter!\n) {\n  item(uri: $uri) {\n    uri\n    kind\n    name\n    artistName\n    artist {\n      name\n      id\n    }\n    album {\n      name\n    }\n    stats(filter: $filter) {\n      summary {\n        ...StatTiles_summary\n      }\n      timeline(bucket: MONTH) {\n        ...TimelineChart_points\n      }\n    }\n    ...PlayHistory_item_Vt7Yj\n    id\n  }\n}\n\nfragment PlayHistory_item_Vt7Yj on Item {\n  stats(filter: $filter) {\n    plays(first: 20) {\n      edges {\n        node {\n          ts\n          msPlayed\n          skipped\n          account {\n            displayName\n            id\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n  id\n}\n\nfragment StatTiles_summary on Summary {\n  plays\n  minutesPlayed\n  distinctTracks\n  distinctArtists\n  skipRate\n  firstPlayed\n  lastPlayed\n}\n\nfragment TimelineChart_points on TimelinePoint {\n  start\n  plays\n  minutesPlayed\n}\n"
+    "text": "query ItemPageQuery(\n  $uri: String!\n  $filter: StatsFilter!\n) {\n  item(uri: $uri) {\n    uri\n    kind\n    name\n    artistName\n    artist {\n      name\n      id\n    }\n    album {\n      name\n    }\n    stats(filter: $filter) {\n      summary {\n        ...StatTiles_summary\n      }\n      ...Firsts_stats\n      timeline(bucket: MONTH) {\n        ...TimelineChart_points\n      }\n    }\n    ...PlayHistory_item_Vt7Yj\n    id\n  }\n}\n\nfragment Firsts_stats on Stats {\n  firstPlay {\n    ts\n    item {\n      uri\n      name\n      id\n    }\n  }\n  topDays(first: 1) {\n    date\n    plays\n    minutesPlayed\n  }\n  listeningDays {\n    activeDays\n    longestStreak {\n      days\n      start\n      end\n    }\n  }\n}\n\nfragment PlayHistory_item_Vt7Yj on Item {\n  stats(filter: $filter) {\n    plays(first: 20) {\n      edges {\n        node {\n          ts\n          msPlayed\n          skipped\n          account {\n            displayName\n            id\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n  id\n}\n\nfragment StatTiles_summary on Summary {\n  plays\n  minutesPlayed\n  distinctTracks\n  distinctArtists\n  skipRate\n  firstPlayed\n  lastPlayed\n}\n\nfragment TimelineChart_points on TimelinePoint {\n  start\n  plays\n  minutesPlayed\n}\n"
   }
 };
 })();
 
-(node as any).hash = "791067d1bb16d0433ecdbd2086d2c611";
+(node as any).hash = "ead202d4d4d3462e6e91bb5de9abbe18";
 
 export default node;

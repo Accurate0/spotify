@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router";
 import type { ItemPageQuery } from "./__generated__/ItemPageQuery.graphql";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import StatTiles from "@/components/StatTiles";
+import Firsts from "@/components/Firsts";
 import TimelineChart from "@/components/TimelineChart";
 import PlayHistory from "@/components/PlayHistory";
 import { useFilter, type StatsFilter } from "@/lib/filter";
@@ -32,6 +33,7 @@ export default function ItemPage() {
             summary {
               ...StatTiles_summary
             }
+            ...Firsts_stats
             timeline(bucket: MONTH) {
               ...TimelineChart_points
             }
@@ -66,6 +68,7 @@ export default function ItemPage() {
       </header>
 
       <StatTiles summary={item.stats.summary} scope="item" />
+      <Firsts stats={item.stats} showFirstTrack={false} />
 
       <Card>
         <CardHeader>

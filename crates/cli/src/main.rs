@@ -1,6 +1,7 @@
 mod client;
 mod graphql;
 mod import;
+mod insights;
 mod stats;
 
 use std::path::PathBuf;
@@ -89,6 +90,28 @@ enum Command {
         #[command(flatten)]
         filter: stats::FilterArgs,
     },
+    /// Streaks, sessions, biggest days, tracks on repeat, discoveries and forgotten favourites.
+    Insights {
+        #[command(flatten)]
+        filter: stats::FilterArgs,
+    },
+    /// Listening split by device, country, shuffle, offline, or how plays started or ended.
+    Breakdown {
+        #[arg(value_enum)]
+        by: insights::BreakdownDimension,
+        #[command(flatten)]
+        filter: stats::FilterArgs,
+    },
+    /// Tracks you skip most, counting every play including short skips.
+    Skipped {
+        #[command(flatten)]
+        filter: stats::FilterArgs,
+        #[arg(long, short = 'n', default_value_t = 20)]
+        limit: i32,
+        /// Only tracks with at least this many plays.
+        #[arg(long, default_value_t = 10)]
+        min_plays: i32,
+    },
     /// Stats and top tracks for an artist.
     Artist {
         name: String,
@@ -166,6 +189,13 @@ async fn main() -> anyhow::Result<()> {
         Command::Heatmap { filter } => stats::heatmap(&client, &filter).await?,
         Command::Search { query, limit } => stats::search(&client, &query, limit).await?,
         Command::Track { query, filter } => stats::track(&client, &query, &filter).await?,
+        Command::Insights { filter } => insights::insights(&client, &filter).await?,
+        Command::Breakdown { by, filter } => insights::breakdown(&client, &filter, by).await?,
+        Command::Skipped {
+            filter,
+            limit,
+            min_plays,
+        } => insights::skipped(&client, &filter, limit, min_plays).await?,
         Command::Artist {
             name,
             filter,

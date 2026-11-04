@@ -47,6 +47,40 @@ type ArtistEdge {
 	cursor: String!
 }
 
+enum BreakdownDimension {
+	"""
+	Device family: Android, iOS, macOS, Windows, Linux, Web player, Other.
+	"""
+	DEVICE
+	"""
+	Country the stream was played from.
+	"""
+	COUNTRY
+	SHUFFLE
+	OFFLINE
+	"""
+	Why playback started (finished previous track, skipped forward, picked, ...).
+	"""
+	START_REASON
+	"""
+	Why playback ended.
+	"""
+	END_REASON
+}
+
+type BreakdownRow {
+	"""
+	Raw value, e.g. `fwdbtn` or `AU`; null when the export doesn't record it.
+	"""
+	key: String
+	"""
+	Human-readable form of `key`.
+	"""
+	label: String!
+	plays: Int!
+	minutesPlayed: Int!
+}
+
 input CreateAccountInput {
 	"""
 	Lowercase identifier used by the CLI, e.g. `me`.
@@ -84,6 +118,62 @@ Implement the DateTime<Utc> scalar
 The input/output is a string in RFC3339 format.
 """
 scalar DateTime
+
+type DayStat {
+	date: NaiveDate!
+	plays: Int!
+	minutesPlayed: Int!
+	"""
+	The artist with the most listening that day.
+	"""
+	topArtist: Artist
+}
+
+type Discovery {
+	artist: Artist!
+	"""
+	First play ever (within the filter's accounts and kinds), which falls in the range.
+	"""
+	firstPlayed: DateTime!
+	"""
+	The first track heard by this artist.
+	"""
+	firstItem: Item
+	"""
+	Plays in the range.
+	"""
+	plays: Int!
+	minutesPlayed: Int!
+}
+
+type DiscoveryConnection {
+	"""
+	Information to aid in pagination.
+	"""
+	pageInfo: PageInfo!
+	"""
+	A list of edges.
+	"""
+	edges: [DiscoveryEdge!]!
+	"""
+	A list of nodes.
+	"""
+	nodes: [Discovery!]!
+}
+
+"""
+An edge in a connection.
+"""
+type DiscoveryEdge {
+	"""
+	The item at the end of the edge
+	"""
+	node: Discovery!
+	"""
+	A cursor for use in pagination
+	"""
+	cursor: String!
+}
 
 type Export implements Node {
 	id: ID!
@@ -127,6 +217,42 @@ input FinalizeExportInput {
 
 type FinalizeExportPayload {
 	export: Export!
+}
+
+type ForgottenArtist {
+	artist: Artist!
+	plays: Int!
+	minutesPlayed: Int!
+	lastPlayed: DateTime!
+}
+
+type ForgottenArtistConnection {
+	"""
+	Information to aid in pagination.
+	"""
+	pageInfo: PageInfo!
+	"""
+	A list of edges.
+	"""
+	edges: [ForgottenArtistEdge!]!
+	"""
+	A list of nodes.
+	"""
+	nodes: [ForgottenArtist!]!
+}
+
+"""
+An edge in a connection.
+"""
+type ForgottenArtistEdge {
+	"""
+	The item at the end of the edge
+	"""
+	node: ForgottenArtist!
+	"""
+	A cursor for use in pagination
+	"""
+	cursor: String!
 }
 
 type HeatmapCell {
@@ -188,12 +314,42 @@ enum ItemKind {
 	AUDIOBOOK
 }
 
+type ListeningDays {
+	"""
+	Days with at least one play.
+	"""
+	activeDays: Int!
+	"""
+	Days from the first to the last play, inclusive.
+	"""
+	spanDays: Int!
+	"""
+	Longest run of consecutive active days.
+	"""
+	longestStreak: Streak
+	"""
+	The run ending on the last active day.
+	"""
+	latestStreak: Streak
+}
+
 type Mutation {
 	createAccount(input: CreateAccountInput!): CreateAccountPayload!
 	createExport(input: CreateExportInput!): CreateExportPayload!
 	uploadExportFile(input: UploadExportFileInput!, file: Upload!): UploadExportFilePayload!
 	finalizeExport(input: FinalizeExportInput!): FinalizeExportPayload!
 }
+
+"""
+ISO 8601 calendar date without timezone.
+Format: %Y-%m-%d
+
+# Examples
+
+* `1994-11-13`
+* `2000-02-24`
+"""
+scalar NaiveDate
 
 interface Node {
 	id: ID!
@@ -399,9 +555,44 @@ type RankedItemEdge {
 	cursor: String!
 }
 
+type RepeatDay {
+	item: Item!
+	"""
+	The day this item was played most.
+	"""
+	date: NaiveDate!
+	plays: Int!
+}
+
 type Search {
 	items(first: Int, after: String): ItemConnection!
 	artists(first: Int, after: String): ArtistConnection!
+}
+
+type Session {
+	start: DateTime!
+	end: DateTime!
+	plays: Int!
+	minutesPlayed: Int!
+}
+
+type Sessions {
+	"""
+	Listening sessions: plays separated by less than 30 minutes of silence.
+	"""
+	count: Int!
+	averageMinutes: Float
+	longest: Session
+}
+
+type SkippedItem {
+	item: Item!
+	"""
+	Plays where the export records whether it was skipped.
+	"""
+	plays: Int!
+	skips: Int!
+	skipRate: Float!
 }
 
 type Stats {
@@ -421,6 +612,40 @@ type Stats {
 	Individual plays, most recent first.
 	"""
 	plays(first: Int, after: String): PlayConnection!
+	"""
+	The earliest play: for an artist or track, when you first heard it.
+	"""
+	firstPlay: Play
+	"""
+	Active days and streaks of consecutive days.
+	"""
+	listeningDays: ListeningDays!
+	"""
+	Days with the most listening, each with its top artist.
+	"""
+	topDays(first: Int! = 10): [DayStat!]!
+	"""
+	Items played most within a single day, one entry per item.
+	"""
+	onRepeat(first: Int! = 10): [RepeatDay!]!
+	"""
+	Highest skip rates among items with at least `minPlays` plays. Counts every play,
+	whatever the filter's minimum play length.
+	"""
+	mostSkipped(first: Int! = 10, minPlays: Int! = 10): [SkippedItem!]!
+	"""
+	Listening split by device, country, shuffle, offline or start/end reason.
+	"""
+	breakdown(by: BreakdownDimension!): [BreakdownRow!]!
+	sessions: Sessions!
+	"""
+	Artists first heard within the date range, by listening in the range.
+	"""
+	discoveries(first: Int, after: String): DiscoveryConnection!
+	"""
+	Artists with heavy listening but nothing in the last year of the range.
+	"""
+	forgottenArtists(first: Int, after: String): ForgottenArtistConnection!
 }
 
 input StatsFilter {
@@ -449,6 +674,12 @@ input StatsFilter {
 	IANA time zone for timeline buckets and the heatmap.
 	"""
 	timeZone: String! = "Australia/Perth"
+}
+
+type Streak {
+	start: NaiveDate!
+	end: NaiveDate!
+	days: Int!
 }
 
 type Summary {

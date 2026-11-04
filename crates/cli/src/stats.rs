@@ -35,7 +35,7 @@ pub struct FilterArgs {
 }
 
 impl FilterArgs {
-    async fn resolve(&self, client: &Client) -> anyhow::Result<StatsFilter> {
+    pub async fn resolve(&self, client: &Client) -> anyhow::Result<StatsFilter> {
         let accounts = if self.account.is_empty() {
             None
         } else {
@@ -65,6 +65,12 @@ impl FilterArgs {
             min_ms_played: self.all_plays.then_some(0),
             time_zone: Some(self.tz.name().to_owned()),
         })
+    }
+}
+
+impl FilterArgs {
+    pub fn tz(&self) -> Tz {
+        self.tz
     }
 }
 
@@ -399,6 +405,9 @@ pub struct PlayConnection {
 #[cynic(graphql_type = "Stats", variables = "ItemVariables")]
 pub struct ItemStats {
     pub summary: Summary,
+    pub listening_days: crate::insights::StreakDays,
+    #[arguments(first: 1)]
+    pub top_days: Vec<crate::insights::PeakDay>,
     #[arguments(first: $first)]
     pub plays: PlayConnection,
 }
@@ -438,6 +447,10 @@ pub struct ArtistTopItems {
 #[cynic(graphql_type = "Stats", variables = "ArtistVariables")]
 pub struct ArtistStats {
     pub summary: Summary,
+    pub first_play: Option<crate::insights::FirstPlay>,
+    pub listening_days: crate::insights::StreakDays,
+    #[arguments(first: 1)]
+    pub top_days: Vec<crate::insights::PeakDay>,
     #[arguments(first: $first)]
     pub top_items: ArtistTopItems,
 }
@@ -686,6 +699,12 @@ pub async fn track(client: &Client, query: &str, filter: &FilterArgs) -> anyhow:
     }
     println!("{}\n", item.uri);
     print_summary(&item.stats.summary);
+    crate::insights::print_firsts(
+        None,
+        &item.stats.listening_days,
+        &item.stats.top_days,
+        filter.tz,
+    );
 
     if !item.stats.plays.edges.is_empty() {
         println!("\nRecent plays");
@@ -727,6 +746,12 @@ pub async fn artist(
 
     println!("{}\n", artist.name);
     print_summary(&artist.stats.summary);
+    crate::insights::print_firsts(
+        artist.stats.first_play.as_ref(),
+        &artist.stats.listening_days,
+        &artist.stats.top_days,
+        filter.tz,
+    );
 
     if !artist.stats.top_items.edges.is_empty() {
         println!("\nTop tracks");
@@ -764,7 +789,7 @@ fn print_summary(summary: &Summary) {
     }
 }
 
-fn item_label(item: &Item) -> String {
+pub fn item_label(item: &Item) -> String {
     match (&item.name, &item.artist_name) {
         (Some(name), Some(artist)) => format!("{name} — {artist}"),
         (Some(name), None) => name.clone(),
@@ -773,7 +798,7 @@ fn item_label(item: &Item) -> String {
 }
 
 /// Minutes as `1d 2h 3m`, dropping leading zero units.
-fn duration(minutes: i32) -> String {
+pub fn duration(minutes: i32) -> String {
     let (days, hours, mins) = (minutes / 1440, minutes % 1440 / 60, minutes % 60);
     match (days, hours) {
         (0, 0) => format!("{mins}m"),

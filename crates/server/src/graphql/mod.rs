@@ -2,7 +2,40 @@ use async_graphql::dataloader::DataLoader;
 use async_graphql::{EmptySubscription, Schema, SchemaBuilder};
 use sqlx::PgPool;
 
+/// Runs a query over `scoped_plays($1..$7)`, binding a `Scope`'s seven filter parameters so each
+/// query lists only its own, starting at `$8`. `query_as!(T)` maps rows into `T`.
+macro_rules! scoped {
+    (query_as!($ty:ident), $scope:expr, $sql:literal $(, $arg:expr)* $(,)?) => {
+        sqlx::query_as!(
+            $ty,
+            $sql,
+            &$scope.accounts,
+            $scope.from,
+            $scope.to,
+            &$scope.kinds,
+            $scope.min_ms,
+            $scope.item_uri.as_deref(),
+            $scope.artist.as_deref()
+            $(, $arg)*
+        )
+    };
+    (query!, $scope:expr, $sql:literal $(, $arg:expr)* $(,)?) => {
+        sqlx::query!(
+            $sql,
+            &$scope.accounts,
+            $scope.from,
+            $scope.to,
+            &$scope.kinds,
+            $scope.min_ms,
+            $scope.item_uri.as_deref(),
+            $scope.artist.as_deref()
+            $(, $arg)*
+        )
+    };
+}
+
 mod catalog;
+mod insights;
 mod loaders;
 mod mutation;
 pub mod node;

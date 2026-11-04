@@ -58,6 +58,26 @@ pub struct SkippedItem {
     pub skip_rate: f64,
 }
 
+#[derive(SimpleObject)]
+pub struct ArtistSkipRate {
+    pub artist: Artist,
+    /// Plays where the export records whether it was skipped.
+    pub plays: i32,
+    pub skips: i32,
+    pub skip_rate: f64,
+    /// 1-based position in the leaderboard.
+    pub rank: i32,
+}
+
+#[derive(Enum, Clone, Copy, PartialEq, Eq, Default)]
+pub enum SkipOrder {
+    /// Highest skip rate first.
+    #[default]
+    MostSkipped,
+    /// Lowest skip rate first: artists you let play.
+    LeastSkipped,
+}
+
 #[derive(Enum, Clone, Copy, PartialEq, Eq)]
 pub enum BreakdownDimension {
     /// Device family: Android, iOS, macOS, Windows, Linux, Web player, Other.
@@ -367,6 +387,48 @@ pub async fn most_skipped(
             item: item(r.uri, r.kind, r.name, r.artist, r.album),
             plays: r.plays,
             skips: r.skips,
+        })
+        .collect())
+}
+
+pub async fn artist_skip_rates(
+    pool: &PgPool,
+    scope: &Scope,
+    order: SkipOrder,
+    first: i32,
+    min_plays: i32,
+) -> sqlx::Result<Vec<ArtistSkipRate>> {
+    // Like most_skipped, counts every play regardless of the filter's minimum length.
+    let rows = scoped!(
+        query!,
+        scope,
+        r#"SELECT artist AS "artist!",
+                  count(*)::int AS "plays!",
+                  count(*) FILTER (WHERE skipped)::int AS "skips!"
+           FROM scoped_plays($1, $2, $3, $4, least($5, 0), $6, $7)
+           WHERE skipped IS NOT NULL AND artist IS NOT NULL
+           GROUP BY artist
+           HAVING count(*) >= $8
+           ORDER BY CASE WHEN $9 THEN 1 ELSE -1 END
+                        * count(*) FILTER (WHERE skipped)::float8 / count(*) DESC,
+                    count(*) DESC, artist
+           LIMIT $10"#,
+        min_plays.max(1) as i64,
+        order == SkipOrder::MostSkipped,
+        first.clamp(1, 100) as i64,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .enumerate()
+        .map(|(i, r)| ArtistSkipRate {
+            skip_rate: r.skips as f64 / r.plays as f64,
+            artist: Artist { name: r.artist },
+            plays: r.plays,
+            skips: r.skips,
+            rank: i as i32 + 1,
         })
         .collect())
 }

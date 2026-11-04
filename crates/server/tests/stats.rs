@@ -416,3 +416,39 @@ async fn discoveries_respect_first_play_and_forgotten_needs_a_year(pool: PgPool)
     .await;
     assert_eq!(forgotten["stats"]["forgottenArtists"]["edges"], json!([]));
 }
+
+#[sqlx::test(migrations = "./migrations")]
+async fn artist_skip_rate_leaderboard(pool: PgPool) {
+    let (_f, schema) = setup(pool).await;
+    let schema = &schema;
+    let me = account_id(schema, "me").await;
+
+    // Alpha: 1 skip in 3 plays. Beta: 1 skip in 2, the skip being a 5s play that only
+    // counts because skip rates ignore the minimum play length.
+    let data = run(
+        schema,
+        r#"query($filter: StatsFilter!) {
+            stats(filter: $filter) {
+                most: artistSkipRates(minPlays: 2) { rank artist { name } skips plays }
+                least: artistSkipRates(order: LEAST_SKIPPED, minPlays: 2) { artist { name } }
+                busy: artistSkipRates(minPlays: 3) { artist { name } }
+            }
+        }"#,
+        json!({"filter": {"accounts": [me]}}),
+    )
+    .await;
+    let stats = &data["stats"];
+
+    assert_eq!(
+        stats["most"],
+        json!([
+            {"rank": 1, "artist": {"name": "Beta"}, "skips": 1, "plays": 2},
+            {"rank": 2, "artist": {"name": "Alpha"}, "skips": 1, "plays": 3},
+        ])
+    );
+    assert_eq!(
+        stats["least"],
+        json!([{"artist": {"name": "Alpha"}}, {"artist": {"name": "Beta"}}])
+    );
+    assert_eq!(stats["busy"], json!([{"artist": {"name": "Alpha"}}]));
+}

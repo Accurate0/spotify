@@ -8,8 +8,8 @@ use sqlx::PgPool;
 
 use super::catalog::{Album, Artist, Item};
 use super::insights::{
-    self, BreakdownDimension, BreakdownRow, DayStat, Discovery, ForgottenArtist, ListeningDays,
-    RepeatDay, Sessions, SkippedItem,
+    self, ArtistSkipRate, BreakdownDimension, BreakdownRow, DayStat, Discovery, ForgottenArtist,
+    ListeningDays, RepeatDay, Sessions, SkipOrder, SkippedItem,
 };
 use super::loaders::{AccountLoader, ItemLoader};
 use super::node::{NodeType, decode_row_id};
@@ -494,6 +494,27 @@ impl Stats {
         #[graphql(default = 10)] min_plays: i32,
     ) -> async_graphql::Result<Vec<SkippedItem>> {
         Ok(insights::most_skipped(ctx.data::<PgPool>()?, &self.scope, first, min_plays).await?)
+    }
+
+    /// Artists ranked by skip rate, among those with at least `minPlays` plays. Counts every
+    /// play, whatever the filter's minimum play length.
+    async fn artist_skip_rates(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default)] order: SkipOrder,
+        #[graphql(default = 10)] first: i32,
+        #[graphql(default = 50)] min_plays: i32,
+    ) -> async_graphql::Result<Vec<ArtistSkipRate>> {
+        Ok(
+            insights::artist_skip_rates(
+                ctx.data::<PgPool>()?,
+                &self.scope,
+                order,
+                first,
+                min_plays,
+            )
+            .await?,
+        )
     }
 
     /// Listening split by device, country, shuffle, offline or start/end reason.

@@ -47,6 +47,20 @@ type ArtistEdge {
 	cursor: String!
 }
 
+type ArtistSkipRate {
+	artist: Artist!
+	"""
+	Plays where the export records whether it was skipped.
+	"""
+	plays: Int!
+	skips: Int!
+	skipRate: Float!
+	"""
+	1-based position in the leaderboard.
+	"""
+	rank: Int!
+}
+
 enum BreakdownDimension {
 	"""
 	Device family: Android, iOS, macOS, Windows, Linux, Web player, Other.
@@ -585,6 +599,17 @@ type Sessions {
 	longest: Session
 }
 
+enum SkipOrder {
+	"""
+	Highest skip rate first.
+	"""
+	MOST_SKIPPED
+	"""
+	Lowest skip rate first: artists you let play.
+	"""
+	LEAST_SKIPPED
+}
+
 type SkippedItem {
 	item: Item!
 	"""
@@ -633,6 +658,11 @@ type Stats {
 	whatever the filter's minimum play length.
 	"""
 	mostSkipped(first: Int! = 10, minPlays: Int! = 10): [SkippedItem!]!
+	"""
+	Artists ranked by skip rate, among those with at least `minPlays` plays. Counts every
+	play, whatever the filter's minimum play length.
+	"""
+	artistSkipRates(order: SkipOrder! = MOST_SKIPPED, first: Int! = 10, minPlays: Int! = 50): [ArtistSkipRate!]!
 	"""
 	Listening split by device, country, shuffle, offline or start/end reason.
 	"""

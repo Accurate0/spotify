@@ -26,4 +26,8 @@ axum = "0.8.9"
 base64 = "0.23.1"
 sqlx = { version = "0.9", features = ["runtime-tokio", "postgres", "tls-rustls", "migrate", "chrono", "derive", "macros", "json"] }
 tower-http = { version = "0.7.1", features = ["limit", "trace"] }
+jsonwebtoken = { version = "11", features = ["rust_crypto"] }
+reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls"] }
 
+[dev-dependencies]
+tower = { version = "0.5.3", features = ["util"] }

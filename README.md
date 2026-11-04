@@ -45,3 +45,17 @@ pnpm relay   # after changing a graphql`...` tag or schema.graphql; artifacts ar
 The image builds from the repository root: `docker build -f web/Dockerfile .`
 
 Import each account's exports separately: `raw/` contains zips of both accounts' data.
+
+## Deployment
+
+Runs at https://spotify.ortzi.cloud (internal gateway), declared in
+`~/Projects/k8s/projects/spotify/app.yaml`: Postgres, the `spotify` Kanidm public client, and
+the API + SPA behind one route (`/graphql`, `/health` → `spotify-api`; `/` → `spotify-web`).
+
+- Pushes to `main` build `ghcr.io/accurate0/spotify` (server + CLI) and
+  `ghcr.io/accurate0/spotify-web`, then `deploy-app-k8s-v2` bumps `image.values.yaml` in k8s.
+- The API requires a Kanidm access token in the `spotify_users` group (`OIDC_ISSUER`,
+  `OIDC_AUDIENCE`, `OIDC_GROUPS`; `AUTH_DISABLED=true` only for local development).
+- The CLI is published to the ortzi registry by `.forgejo/workflows/publish-cli-spotify.yaml`
+  (bump `version` in `ortzi.yaml`); install with `ortzi install spotify`, then
+  `ortzi spotify import <dir> --account <slug>`.

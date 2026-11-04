@@ -1,0 +1,23 @@
+name: Publish spotify
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - crates/cli/**
+      - crates/export/**
+      - schema.graphql
+      - Cargo.toml
+      - Cargo.lock
+      - ortzi.yaml
+      - .forgejo/workflows/publish-cli-spotify.yaml
+  workflow_dispatch:
+
+enable-openid-connect: true
+
+jobs:
+  publish:
+    runs-on: ortzi
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - run: ortzi publish

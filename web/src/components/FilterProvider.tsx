@@ -6,9 +6,12 @@ import { FilterContext, type FilterContextValue, type FilterState } from "@/lib/
 
 const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-/** [from, to) for a range, as local midnights in the browser's time zone. */
-function rangeBounds(range: string): { from: Date | null; to: Date | null } {
-  const now = new Date();
+/**
+ * [from, to) for a range, as local midnights in the browser's time zone. Relative ranges count
+ * back from the latest play rather than today: exports are history, often months old.
+ */
+function rangeBounds(range: string, latest: Date): { from: Date | null; to: Date | null } {
+  const now = latest;
   const midnight = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
   if (range === "30d") {
     const from = midnight(now);
@@ -87,7 +90,7 @@ export default function FilterProvider({ children }: { children: ReactNode }) {
     }
 
     const account = data.accounts.find((a) => a.slug === state.account);
-    const { from, to } = rangeBounds(state.range);
+    const { from, to } = rangeBounds(state.range, lastPlayed ? new Date(lastPlayed) : new Date());
 
     return {
       state,

@@ -44,8 +44,8 @@ export default function FilterBar() {
         onChange={(e) => setState({ range: e.target.value })}
       >
         <option value="all">All time</option>
-        <option value="30d">Last 30 days</option>
-        <option value="12m">Last 12 months</option>
+        <option value="30d">Latest 30 days</option>
+        <option value="12m">Latest 12 months</option>
         {years.map((y) => (
           <option key={y} value={String(y)}>
             {y}

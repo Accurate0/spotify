@@ -5,7 +5,7 @@ mod stats;
 
 use std::path::PathBuf;
 
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
 use cynic::{MutationBuilder, QueryBuilder};
 
 use client::Client;
@@ -111,6 +111,9 @@ enum AccountsCommand {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Shell completions, driven by ortzi (`completions: clap` in ortzi.yaml).
+    clap_complete::CompleteEnv::with_factory(Cli::command).complete();
+
     let cli = Cli::parse();
     let client = Client::new(&cli.url, cli.token)?;
 

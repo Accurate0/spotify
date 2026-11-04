@@ -1,0 +1,13 @@
+package:
+  name: spotify
+  version: 0.1.0
+  completions: clap
+  description: import and query spotify data exports
+  binary: spotify
+auth:
+  client_id: spotify
+  token_env: SPOTIFY_TOKEN
+build:
+  cargo:
+    package: spotify-cli
+    bin: spotify

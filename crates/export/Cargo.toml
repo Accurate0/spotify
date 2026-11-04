@@ -1,0 +1,11 @@
+[package]
+name = "spotify-export"
+description = "Spotify data export file detection and parsing, shared by server and cli"
+edition.workspace = true
+version.workspace = true
+
+[dependencies]
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }

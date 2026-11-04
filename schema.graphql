@@ -1,0 +1,164 @@
+type Account implements Node {
+	id: ID!
+	slug: String!
+	displayName: String!
+	spotifyUsername: String
+	playCount: Int!
+	exports: [Export!]!
+}
+
+input CreateAccountInput {
+	"""
+	Lowercase identifier used by the CLI, e.g. `me`.
+	"""
+	slug: String!
+	displayName: String
+}
+
+type CreateAccountPayload {
+	account: Account!
+}
+
+input CreateExportInput {
+	"""
+	Account slug.
+	"""
+	account: String!
+	"""
+	Where the export came from, e.g. its directory name.
+	"""
+	label: String!
+	"""
+	Newest timestamp in the export's files. When exports overlap, the newer one's values win.
+	"""
+	asOf: DateTime!
+}
+
+type CreateExportPayload {
+	export: Export!
+}
+
+"""
+Implement the DateTime<Utc> scalar
+
+The input/output is a string in RFC3339 format.
+"""
+scalar DateTime
+
+type Export implements Node {
+	id: ID!
+	label: String!
+	asOf: DateTime!
+	createdAt: DateTime!
+	finalizedAt: DateTime
+	account: Account!
+	files: [ExportFile!]!
+}
+
+type ExportFile implements Node {
+	id: ID!
+	name: String!
+	kind: FileKind!
+	sha256: String!
+	rowsTotal: Int!
+	rowsInserted: Int!
+	rowsMerged: Int!
+	importedAt: DateTime!
+	export: Export!
+}
+
+enum FileKind {
+	EXTENDED_AUDIO
+	EXTENDED_VIDEO
+	ACCOUNT_STREAMING_HISTORY
+	LIBRARY
+	PLAYLIST
+	SEARCH_QUERIES
+	FOLLOW
+	MARQUEE
+	INFERENCES
+	USERDATA
+	PRIVATE
+}
+
+input FinalizeExportInput {
+	exportId: ID!
+}
+
+type FinalizeExportPayload {
+	export: Export!
+}
+
+type Mutation {
+	createAccount(input: CreateAccountInput!): CreateAccountPayload!
+	createExport(input: CreateExportInput!): CreateExportPayload!
+	uploadExportFile(input: UploadExportFileInput!, file: Upload!): UploadExportFilePayload!
+	finalizeExport(input: FinalizeExportInput!): FinalizeExportPayload!
+}
+
+interface Node {
+	id: ID!
+}
+
+type Query {
+	node(id: ID!): Node
+	nodes(ids: [ID!]!): [Node]!
+	accounts: [Account!]!
+	account(slug: String!): Account
+	"""
+	Whether a file with this sha256 has already been imported for the account, so clients
+	can skip uploading it.
+	"""
+	fileExists(account: String!, sha256: String!): Boolean!
+}
+
+"""
+A multipart file upload
+"""
+scalar Upload
+
+input UploadExportFileInput {
+	exportId: ID!
+	"""
+	The file's name inside the export, used to detect its kind.
+	"""
+	name: String!
+	"""
+	Hex sha256 of the file, verified by the server.
+	"""
+	sha256: String!
+}
+
+type UploadExportFilePayload {
+	status: UploadStatus!
+	file: ExportFile
+}
+
+enum UploadStatus {
+	IMPORTED
+	"""
+	Already imported for this account; nothing was changed.
+	"""
+	DUPLICATE
+	"""
+	The file kind is not imported.
+	"""
+	UNSUPPORTED
+}
+
+"""
+Directs the executor to include this field or fragment only when the `if` argument is true.
+"""
+directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+"""
+Directs the executor to skip this field or fragment when the `if` argument is true.
+"""
+directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+"""
+Provides a scalar specification URL for specifying the behavior of custom scalar types.
+"""
+directive @specifiedBy(url: String!) on SCALAR
+schema {
+	query: Query
+	mutation: Mutation
+}

@@ -160,6 +160,43 @@ pub struct BreakdownQuery {
     pub stats: BreakdownStats,
 }
 
+#[derive(cynic::Enum, Clone, Copy, Debug)]
+pub enum SkipOrder {
+    MostSkipped,
+    LeastSkipped,
+}
+
+#[derive(cynic::QueryVariables)]
+pub struct ArtistSkipsVariables {
+    pub filter: StatsFilter,
+    pub first: i32,
+    pub min_plays: i32,
+    pub order: SkipOrder,
+}
+
+#[derive(cynic::QueryFragment, Debug)]
+pub struct ArtistSkipRate {
+    pub rank: i32,
+    pub artist: Artist,
+    pub plays: i32,
+    pub skips: i32,
+    pub skip_rate: f64,
+}
+
+#[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "Stats", variables = "ArtistSkipsVariables")]
+pub struct ArtistSkipsStats {
+    #[arguments(order: $order, first: $first, minPlays: $min_plays)]
+    pub artist_skip_rates: Vec<ArtistSkipRate>,
+}
+
+#[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "Query", variables = "ArtistSkipsVariables")]
+pub struct ArtistSkipsQuery {
+    #[arguments(filter: $filter)]
+    pub stats: ArtistSkipsStats,
+}
+
 #[derive(cynic::QueryVariables)]
 pub struct SkippedVariables {
     pub filter: StatsFilter,
@@ -339,6 +376,45 @@ pub async fn breakdown(
             share * 100.0,
             row.plays,
             "█".repeat((share * 30.0).round() as usize)
+        );
+    }
+    Ok(())
+}
+
+/// Artist skip-rate leaderboard, most or least skipped first.
+pub async fn skipped_artists(
+    client: &Client,
+    filter: &FilterArgs,
+    limit: i32,
+    min_plays: i32,
+    least: bool,
+) -> anyhow::Result<()> {
+    let rows = client
+        .run(ArtistSkipsQuery::build(ArtistSkipsVariables {
+            filter: filter.resolve(client).await?,
+            first: limit,
+            min_plays,
+            order: if least {
+                SkipOrder::LeastSkipped
+            } else {
+                SkipOrder::MostSkipped
+            },
+        }))
+        .await?
+        .stats
+        .artist_skip_rates;
+
+    if rows.is_empty() {
+        println!("no artists with at least {min_plays} plays that record skips");
+    }
+    for r in rows {
+        println!(
+            "{:>4}  {:>5.1}%  {:>5}/{:<5} skipped  {}",
+            r.rank,
+            r.skip_rate * 100.0,
+            r.skips,
+            r.plays,
+            r.artist.name
         );
     }
     Ok(())

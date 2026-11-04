@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { graphql, useLazyLoadQuery } from "react-relay";
 import { Link } from "react-router";
 import type { InsightsPageQuery } from "./__generated__/InsightsPageQuery.graphql";
@@ -7,6 +7,7 @@ import ShareList from "@/components/ShareList";
 import { useFilter, type StatsFilter } from "@/lib/filter";
 import { formatDate, formatDay, formatDuration, formatNumber, formatPercent } from "@/lib/format";
 import { artistPath, itemPath } from "@/lib/paths";
+import { cn } from "@/lib/utils";
 
 function Tile({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
@@ -35,6 +36,65 @@ function Section({
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
+  );
+}
+
+type SkipRow = {
+  readonly rank: number;
+  readonly plays: number;
+  readonly skips: number;
+  readonly skipRate: number;
+  readonly artist: { readonly id: string; readonly name: string };
+};
+
+function ArtistSkips({ most, least }: { most: readonly SkipRow[]; least: readonly SkipRow[] }) {
+  const [order, setOrder] = useState<"most" | "least">("most");
+  const rows = order === "most" ? most : least;
+
+  return (
+    <div>
+      <div className="bg-muted mb-3 inline-flex rounded-lg p-1 text-sm">
+        {(["most", "least"] as const).map((o) => (
+          <button
+            key={o}
+            type="button"
+            onClick={() => setOrder(o)}
+            aria-pressed={order === o}
+            className={cn(
+              "rounded-md px-3 py-1 font-medium transition-colors",
+              order === o ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {o === "most" ? "Most skipped" : "Least skipped"}
+          </button>
+        ))}
+      </div>
+      {rows.length === 0 ? (
+        <Empty />
+      ) : (
+        <ol className="divide-y">
+          {rows.map((r) => (
+            <Row
+              key={r.artist.id}
+              title={
+                <span>
+                  <span className="text-muted-foreground mr-2 tabular-nums">{r.rank}</span>
+                  <Link to={artistPath(r.artist.name)} className="hover:underline">{r.artist.name}</Link>
+                </span>
+              }
+              value={
+                <>
+                  <div className="font-medium">{formatPercent(r.skipRate)}</div>
+                  <div className="text-muted-foreground text-xs">
+                    {formatNumber(r.skips)} of {formatNumber(r.plays)}
+                  </div>
+                </>
+              }
+            />
+          ))}
+        </ol>
+      )}
+    </div>
   );
 }
 
@@ -169,6 +229,26 @@ export default function InsightsPage() {
           }
         }
         skips: stats(filter: $allPlays) {
+          mostSkippedArtists: artistSkipRates(order: MOST_SKIPPED, first: 10) {
+            rank
+            plays
+            skips
+            skipRate
+            artist {
+              id
+              name
+            }
+          }
+          leastSkippedArtists: artistSkipRates(order: LEAST_SKIPPED, first: 10) {
+            rank
+            plays
+            skips
+            skipRate
+            artist {
+              id
+              name
+            }
+          }
           mostSkipped(first: 8) {
             plays
             skips
@@ -314,6 +394,10 @@ export default function InsightsPage() {
               ))}
             </ol>
           )}
+        </Section>
+
+        <Section title="Artist skip rates" description="Artists with at least 50 plays, counting every skip">
+          <ArtistSkips most={data.skips.mostSkippedArtists} least={data.skips.leastSkippedArtists} />
         </Section>
 
         <Section title="Forgotten favourites" description="Big artists with nothing in the last year of this range">

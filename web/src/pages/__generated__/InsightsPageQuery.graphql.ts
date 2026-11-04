@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<4d0f85b42524aa9f7132d2c356c2e4e9>>
+ * @generated SignedSource<<fc827e8d9b4dd5df8a5e928ad44163b7>>
  * @lightSyntaxTransform
  */
 
@@ -23,6 +23,16 @@ export type InsightsPageQuery$variables = {
 };
 export type InsightsPageQuery$data = {
   readonly skips: {
+    readonly leastSkippedArtists: ReadonlyArray<{
+      readonly artist: {
+        readonly id: string;
+        readonly name: string;
+      };
+      readonly plays: number;
+      readonly rank: number;
+      readonly skipRate: number;
+      readonly skips: number;
+    }>;
     readonly mostSkipped: ReadonlyArray<{
       readonly item: {
         readonly artistName: string | null | undefined;
@@ -31,6 +41,16 @@ export type InsightsPageQuery$data = {
         readonly uri: string;
       };
       readonly plays: number;
+      readonly skipRate: number;
+      readonly skips: number;
+    }>;
+    readonly mostSkippedArtists: ReadonlyArray<{
+      readonly artist: {
+        readonly id: string;
+        readonly name: string;
+      };
+      readonly plays: number;
+      readonly rank: number;
       readonly skipRate: number;
       readonly skips: number;
     }>;
@@ -348,14 +368,15 @@ v15 = {
   ],
   "storageKey": "onRepeat(first:8)"
 },
-v16 = [
-  {
-    "kind": "Literal",
-    "name": "first",
-    "value": 10
-  }
+v16 = {
+  "kind": "Literal",
+  "name": "first",
+  "value": 10
+},
+v17 = [
+  (v16/*:: as any*/)
 ],
-v17 = {
+v18 = {
   "alias": null,
   "args": null,
   "concreteType": "Artist",
@@ -368,16 +389,16 @@ v17 = {
   ],
   "storageKey": null
 },
-v18 = {
+v19 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "firstPlayed",
   "storageKey": null
 },
-v19 = {
+v20 = {
   "alias": null,
-  "args": (v16/*:: as any*/),
+  "args": (v17/*:: as any*/),
   "concreteType": "ForgottenArtistConnection",
   "kind": "LinkedField",
   "name": "forgottenArtists",
@@ -399,7 +420,7 @@ v19 = {
           "name": "node",
           "plural": false,
           "selections": [
-            (v17/*:: as any*/),
+            (v18/*:: as any*/),
             (v7/*:: as any*/),
             {
               "alias": null,
@@ -417,7 +438,7 @@ v19 = {
   ],
   "storageKey": "forgottenArtists(first:10)"
 },
-v20 = [
+v21 = [
   {
     "alias": null,
     "args": null,
@@ -428,7 +449,7 @@ v20 = [
   (v6/*:: as any*/),
   (v7/*:: as any*/)
 ],
-v21 = {
+v22 = {
   "alias": "device",
   "args": [
     {
@@ -441,10 +462,10 @@ v21 = {
   "kind": "LinkedField",
   "name": "breakdown",
   "plural": true,
-  "selections": (v20/*:: as any*/),
+  "selections": (v21/*:: as any*/),
   "storageKey": "breakdown(by:\"DEVICE\")"
 },
-v22 = {
+v23 = {
   "alias": "country",
   "args": [
     {
@@ -457,10 +478,10 @@ v22 = {
   "kind": "LinkedField",
   "name": "breakdown",
   "plural": true,
-  "selections": (v20/*:: as any*/),
+  "selections": (v21/*:: as any*/),
   "storageKey": "breakdown(by:\"COUNTRY\")"
 },
-v23 = {
+v24 = {
   "alias": "shuffle",
   "args": [
     {
@@ -473,10 +494,10 @@ v23 = {
   "kind": "LinkedField",
   "name": "breakdown",
   "plural": true,
-  "selections": (v20/*:: as any*/),
+  "selections": (v21/*:: as any*/),
   "storageKey": "breakdown(by:\"SHUFFLE\")"
 },
-v24 = {
+v25 = {
   "alias": "offline",
   "args": [
     {
@@ -489,10 +510,10 @@ v24 = {
   "kind": "LinkedField",
   "name": "breakdown",
   "plural": true,
-  "selections": (v20/*:: as any*/),
+  "selections": (v21/*:: as any*/),
   "storageKey": "breakdown(by:\"OFFLINE\")"
 },
-v25 = {
+v26 = {
   "alias": "endReason",
   "args": [
     {
@@ -505,10 +526,37 @@ v25 = {
   "kind": "LinkedField",
   "name": "breakdown",
   "plural": true,
-  "selections": (v20/*:: as any*/),
+  "selections": (v21/*:: as any*/),
   "storageKey": "breakdown(by:\"END_REASON\")"
 },
-v26 = {
+v27 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "skips",
+  "storageKey": null
+},
+v28 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "skipRate",
+  "storageKey": null
+},
+v29 = [
+  {
+    "alias": null,
+    "args": null,
+    "kind": "ScalarField",
+    "name": "rank",
+    "storageKey": null
+  },
+  (v6/*:: as any*/),
+  (v27/*:: as any*/),
+  (v28/*:: as any*/),
+  (v18/*:: as any*/)
+],
+v30 = {
   "alias": "skips",
   "args": [
     {
@@ -523,6 +571,40 @@ v26 = {
   "plural": false,
   "selections": [
     {
+      "alias": "mostSkippedArtists",
+      "args": [
+        (v16/*:: as any*/),
+        {
+          "kind": "Literal",
+          "name": "order",
+          "value": "MOST_SKIPPED"
+        }
+      ],
+      "concreteType": "ArtistSkipRate",
+      "kind": "LinkedField",
+      "name": "artistSkipRates",
+      "plural": true,
+      "selections": (v29/*:: as any*/),
+      "storageKey": "artistSkipRates(first:10,order:\"MOST_SKIPPED\")"
+    },
+    {
+      "alias": "leastSkippedArtists",
+      "args": [
+        (v16/*:: as any*/),
+        {
+          "kind": "Literal",
+          "name": "order",
+          "value": "LEAST_SKIPPED"
+        }
+      ],
+      "concreteType": "ArtistSkipRate",
+      "kind": "LinkedField",
+      "name": "artistSkipRates",
+      "plural": true,
+      "selections": (v29/*:: as any*/),
+      "storageKey": "artistSkipRates(first:10,order:\"LEAST_SKIPPED\")"
+    },
+    {
       "alias": null,
       "args": (v9/*:: as any*/),
       "concreteType": "SkippedItem",
@@ -531,20 +613,8 @@ v26 = {
       "plural": true,
       "selections": [
         (v6/*:: as any*/),
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "skips",
-          "storageKey": null
-        },
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "skipRate",
-          "storageKey": null
-        },
+        (v27/*:: as any*/),
+        (v28/*:: as any*/),
         (v14/*:: as any*/)
       ],
       "storageKey": "mostSkipped(first:8)"
@@ -552,7 +622,7 @@ v26 = {
   ],
   "storageKey": null
 },
-v27 = [
+v31 = [
   (v11/*:: as any*/),
   (v13/*:: as any*/)
 ];
@@ -603,7 +673,7 @@ return {
           (v15/*:: as any*/),
           {
             "alias": null,
-            "args": (v16/*:: as any*/),
+            "args": (v17/*:: as any*/),
             "concreteType": "DiscoveryConnection",
             "kind": "LinkedField",
             "name": "discoveries",
@@ -625,8 +695,8 @@ return {
                     "name": "node",
                     "plural": false,
                     "selections": [
-                      (v17/*:: as any*/),
                       (v18/*:: as any*/),
+                      (v19/*:: as any*/),
                       (v7/*:: as any*/),
                       {
                         "alias": null,
@@ -647,16 +717,16 @@ return {
             ],
             "storageKey": "discoveries(first:10)"
           },
-          (v19/*:: as any*/),
-          (v21/*:: as any*/),
+          (v20/*:: as any*/),
           (v22/*:: as any*/),
           (v23/*:: as any*/),
           (v24/*:: as any*/),
-          (v25/*:: as any*/)
+          (v25/*:: as any*/),
+          (v26/*:: as any*/)
         ],
         "storageKey": null
       },
-      (v26/*:: as any*/)
+      (v30/*:: as any*/)
     ],
     "type": "Query",
     "abstractKey": null
@@ -698,7 +768,7 @@ return {
                 "kind": "LinkedField",
                 "name": "topArtist",
                 "plural": false,
-                "selections": (v27/*:: as any*/),
+                "selections": (v31/*:: as any*/),
                 "storageKey": null
               }
             ],
@@ -707,7 +777,7 @@ return {
           (v15/*:: as any*/),
           {
             "alias": null,
-            "args": (v16/*:: as any*/),
+            "args": (v17/*:: as any*/),
             "concreteType": "DiscoveryConnection",
             "kind": "LinkedField",
             "name": "discoveries",
@@ -729,8 +799,8 @@ return {
                     "name": "node",
                     "plural": false,
                     "selections": [
-                      (v17/*:: as any*/),
                       (v18/*:: as any*/),
+                      (v19/*:: as any*/),
                       (v7/*:: as any*/),
                       {
                         "alias": null,
@@ -739,7 +809,7 @@ return {
                         "kind": "LinkedField",
                         "name": "firstItem",
                         "plural": false,
-                        "selections": (v27/*:: as any*/),
+                        "selections": (v31/*:: as any*/),
                         "storageKey": null
                       }
                     ],
@@ -751,29 +821,29 @@ return {
             ],
             "storageKey": "discoveries(first:10)"
           },
-          (v19/*:: as any*/),
-          (v21/*:: as any*/),
+          (v20/*:: as any*/),
           (v22/*:: as any*/),
           (v23/*:: as any*/),
           (v24/*:: as any*/),
-          (v25/*:: as any*/)
+          (v25/*:: as any*/),
+          (v26/*:: as any*/)
         ],
         "storageKey": null
       },
-      (v26/*:: as any*/)
+      (v30/*:: as any*/)
     ]
   },
   "params": {
-    "cacheID": "e161c81dd0610c762d09eb603bbbca99",
+    "cacheID": "9999e1f775d6e230209cbfd8f28c0c46",
     "id": null,
     "metadata": {},
     "name": "InsightsPageQuery",
     "operationKind": "query",
-    "text": "query InsightsPageQuery(\n  $filter: StatsFilter!\n  $allPlays: StatsFilter!\n) {\n  stats(filter: $filter) {\n    listeningDays {\n      activeDays\n      spanDays\n      longestStreak {\n        start\n        end\n        days\n      }\n      latestStreak {\n        start\n        end\n        days\n      }\n    }\n    sessions {\n      count\n      averageMinutes\n      longest {\n        start\n        plays\n        minutesPlayed\n      }\n    }\n    topDays(first: 8) {\n      date\n      plays\n      minutesPlayed\n      topArtist {\n        name\n        id\n      }\n    }\n    onRepeat(first: 8) {\n      date\n      plays\n      item {\n        id\n        uri\n        name\n        artistName\n      }\n    }\n    discoveries(first: 10) {\n      edges {\n        node {\n          artist {\n            id\n            name\n          }\n          firstPlayed\n          minutesPlayed\n          firstItem {\n            name\n            id\n          }\n        }\n      }\n    }\n    forgottenArtists(first: 10) {\n      edges {\n        node {\n          artist {\n            id\n            name\n          }\n          minutesPlayed\n          lastPlayed\n        }\n      }\n    }\n    device: breakdown(by: DEVICE) {\n      label\n      plays\n      minutesPlayed\n    }\n    country: breakdown(by: COUNTRY) {\n      label\n      plays\n      minutesPlayed\n    }\n    shuffle: breakdown(by: SHUFFLE) {\n      label\n      plays\n      minutesPlayed\n    }\n    offline: breakdown(by: OFFLINE) {\n      label\n      plays\n      minutesPlayed\n    }\n    endReason: breakdown(by: END_REASON) {\n      label\n      plays\n      minutesPlayed\n    }\n  }\n  skips: stats(filter: $allPlays) {\n    mostSkipped(first: 8) {\n      plays\n      skips\n      skipRate\n      item {\n        id\n        uri\n        name\n        artistName\n      }\n    }\n  }\n}\n"
+    "text": "query InsightsPageQuery(\n  $filter: StatsFilter!\n  $allPlays: StatsFilter!\n) {\n  stats(filter: $filter) {\n    listeningDays {\n      activeDays\n      spanDays\n      longestStreak {\n        start\n        end\n        days\n      }\n      latestStreak {\n        start\n        end\n        days\n      }\n    }\n    sessions {\n      count\n      averageMinutes\n      longest {\n        start\n        plays\n        minutesPlayed\n      }\n    }\n    topDays(first: 8) {\n      date\n      plays\n      minutesPlayed\n      topArtist {\n        name\n        id\n      }\n    }\n    onRepeat(first: 8) {\n      date\n      plays\n      item {\n        id\n        uri\n        name\n        artistName\n      }\n    }\n    discoveries(first: 10) {\n      edges {\n        node {\n          artist {\n            id\n            name\n          }\n          firstPlayed\n          minutesPlayed\n          firstItem {\n            name\n            id\n          }\n        }\n      }\n    }\n    forgottenArtists(first: 10) {\n      edges {\n        node {\n          artist {\n            id\n            name\n          }\n          minutesPlayed\n          lastPlayed\n        }\n      }\n    }\n    device: breakdown(by: DEVICE) {\n      label\n      plays\n      minutesPlayed\n    }\n    country: breakdown(by: COUNTRY) {\n      label\n      plays\n      minutesPlayed\n    }\n    shuffle: breakdown(by: SHUFFLE) {\n      label\n      plays\n      minutesPlayed\n    }\n    offline: breakdown(by: OFFLINE) {\n      label\n      plays\n      minutesPlayed\n    }\n    endReason: breakdown(by: END_REASON) {\n      label\n      plays\n      minutesPlayed\n    }\n  }\n  skips: stats(filter: $allPlays) {\n    mostSkippedArtists: artistSkipRates(order: MOST_SKIPPED, first: 10) {\n      rank\n      plays\n      skips\n      skipRate\n      artist {\n        id\n        name\n      }\n    }\n    leastSkippedArtists: artistSkipRates(order: LEAST_SKIPPED, first: 10) {\n      rank\n      plays\n      skips\n      skipRate\n      artist {\n        id\n        name\n      }\n    }\n    mostSkipped(first: 8) {\n      plays\n      skips\n      skipRate\n      item {\n        id\n        uri\n        name\n        artistName\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "6638df36d5ce8de8059951aca25f1b79";
+(node as any).hash = "f85a011112d5b30164c4d8a6afaf6409";
 
 export default node;

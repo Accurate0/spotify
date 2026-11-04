@@ -102,15 +102,21 @@ enum Command {
         #[command(flatten)]
         filter: stats::FilterArgs,
     },
-    /// Tracks you skip most, counting every play including short skips.
+    /// Tracks (or artists) you skip most, counting every play including short skips.
     Skipped {
         #[command(flatten)]
         filter: stats::FilterArgs,
         #[arg(long, short = 'n', default_value_t = 20)]
         limit: i32,
-        /// Only tracks with at least this many plays.
-        #[arg(long, default_value_t = 10)]
-        min_plays: i32,
+        /// Only include entries with at least this many plays [default: 10 tracks, 50 artists].
+        #[arg(long)]
+        min_plays: Option<i32>,
+        /// Rank artists instead of tracks.
+        #[arg(long)]
+        artists: bool,
+        /// With --artists, least skipped first.
+        #[arg(long, requires = "artists")]
+        least: bool,
     },
     /// Stats and top tracks for an artist.
     Artist {
@@ -195,7 +201,19 @@ async fn main() -> anyhow::Result<()> {
             filter,
             limit,
             min_plays,
-        } => insights::skipped(&client, &filter, limit, min_plays).await?,
+            artists: true,
+            least,
+        } => {
+            insights::skipped_artists(&client, &filter, limit, min_plays.unwrap_or(50), least)
+                .await?
+        }
+        Command::Skipped {
+            filter,
+            limit,
+            min_plays,
+            artists: false,
+            ..
+        } => insights::skipped(&client, &filter, limit, min_plays.unwrap_or(10)).await?,
         Command::Artist {
             name,
             filter,

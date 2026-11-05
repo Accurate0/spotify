@@ -22,6 +22,7 @@ const DEFAULT_TIME_ZONE: &str = "Australia/Perth";
 const DEFAULT_MIN_MS_PLAYED: i32 = 30_000;
 
 #[derive(InputObject, Clone)]
+#[graphql(name = "SpotifyStatsFilter")]
 pub struct StatsFilter {
     /// Accounts to include; empty means all.
     #[graphql(default)]
@@ -114,6 +115,7 @@ impl Scope {
 }
 
 #[derive(Enum, Clone, Copy, PartialEq, Eq, Default)]
+#[graphql(name = "SpotifyRankBy")]
 pub enum RankBy {
     #[default]
     MinutesPlayed,
@@ -121,6 +123,7 @@ pub enum RankBy {
 }
 
 #[derive(Enum, Clone, Copy, PartialEq, Eq)]
+#[graphql(name = "SpotifyTimeBucket")]
 pub enum TimeBucket {
     Day,
     Week,
@@ -140,6 +143,7 @@ impl TimeBucket {
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifySummary")]
 pub struct Summary {
     pub plays: i32,
     pub minutes_played: i32,
@@ -152,6 +156,7 @@ pub struct Summary {
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifyTimelinePoint")]
 pub struct TimelinePoint {
     /// Start of the bucket in the filter's time zone.
     pub start: DateTime<Utc>,
@@ -160,6 +165,7 @@ pub struct TimelinePoint {
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifyHeatmapCell")]
 pub struct HeatmapCell {
     /// ISO day of week: 1 is Monday, 7 is Sunday.
     pub day_of_week: i32,
@@ -179,7 +185,7 @@ pub struct Play {
     pub(super) is_extended: bool,
 }
 
-#[Object]
+#[Object(name = "SpotifyPlay")]
 impl Play {
     /// When playback ended.
     async fn ts(&self) -> DateTime<Utc> {
@@ -235,7 +241,7 @@ impl Stats {
     }
 }
 
-#[Object]
+#[Object(name = "SpotifyStats")]
 impl Stats {
     async fn summary(&self, ctx: &Context<'_>) -> async_graphql::Result<Summary> {
         let pool = ctx.data::<PgPool>()?;

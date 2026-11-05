@@ -1,11 +1,11 @@
-//! Relay global object identification: IDs are base64 of `<Type>:<key>`. Keys are database ids
-//! for rows, the URI for items and the name for artists (exports have no artist URIs).
+//! Relay global object identification: IDs are `spotify:<node>:<key>`, where `<node>` is the
+//! GraphQL type name without the `Spotify` prefix, in lowerCamelCase. The graph router's node
+//! plugin turns that into `__typename`. Keys are database ids for rows, the URI for items and the
+//! name for artists (exports have no artist URIs).
 
 use std::fmt::Display;
 
 use async_graphql::{ID, Interface};
-use base64::Engine;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 
 use super::catalog::{Artist, Item};
 use super::objects::{Account, Export, ExportFile};
@@ -40,11 +40,11 @@ impl NodeType {
 
     fn as_str(self) -> &'static str {
         match self {
-            Self::Account => "Account",
-            Self::Export => "Export",
-            Self::ExportFile => "ExportFile",
-            Self::Item => "Item",
-            Self::Artist => "Artist",
+            Self::Account => "account",
+            Self::Export => "export",
+            Self::ExportFile => "exportFile",
+            Self::Item => "item",
+            Self::Artist => "artist",
         }
     }
 
@@ -53,18 +53,19 @@ impl NodeType {
     }
 }
 
+const SERVICE: &str = "spotify";
+
 pub fn encode(ty: NodeType, key: impl Display) -> ID {
-    ID(URL_SAFE_NO_PAD.encode(format!("{}:{key}", ty.as_str())))
+    ID(format!("{SERVICE}:{}:{key}", ty.as_str()))
 }
 
 pub fn decode(id: &ID) -> async_graphql::Result<(NodeType, String)> {
     let invalid = || async_graphql::Error::new(format!("invalid id {:?}", id.as_str()));
 
-    let raw = URL_SAFE_NO_PAD
-        .decode(id.as_bytes())
-        .map_err(|_| invalid())?;
-    let raw = String::from_utf8(raw).map_err(|_| invalid())?;
-    let (ty, key) = raw.split_once(':').ok_or_else(invalid)?;
+    let mut parts = id.splitn(3, ':');
+    let (Some(SERVICE), Some(ty), Some(key)) = (parts.next(), parts.next(), parts.next()) else {
+        return Err(invalid());
+    };
 
     Ok((NodeType::parse(ty).ok_or_else(invalid)?, key.to_owned()))
 }
@@ -94,12 +95,15 @@ mod tests {
     #[test]
     fn round_trips() {
         let id = encode(NodeType::ExportFile, 42);
+        assert_eq!(id.as_str(), "spotify:exportFile:42");
         assert_eq!(decode_row_id(&id, NodeType::ExportFile).unwrap(), 42);
+        assert!(decode(&ID("home:exportFile:42".into())).is_err());
         assert!(decode_as(&id, NodeType::Account).is_err());
         assert!(decode(&ID("nope".into())).is_err());
 
         // Keys may contain the separator.
         let id = encode(NodeType::Item, "spotify:track:abc");
+        assert_eq!(id.as_str(), "spotify:item:spotify:track:abc");
         assert_eq!(
             decode(&id).unwrap(),
             (NodeType::Item, "spotify:track:abc".to_owned())

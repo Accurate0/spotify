@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<ca3febb7897bb27c6a6fe26cb10677cd>>
+ * @generated SignedSource<<9995af3497485d46982b95acdfb013e2>>
  * @lightSyntaxTransform
  */
 
@@ -9,19 +9,19 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
-export type ItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
-export type RankBy = "MINUTES_PLAYED" | "PLAYS" | "%future added value";
-export type StatsFilter = {
+export type SpotifyItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
+export type SpotifyRankBy = "MINUTES_PLAYED" | "PLAYS" | "%future added value";
+export type SpotifyStatsFilter = {
   accounts?: ReadonlyArray<string>;
   from?: string | null | undefined;
-  kinds?: ReadonlyArray<ItemKind>;
+  kinds?: ReadonlyArray<SpotifyItemKind>;
   minMsPlayed?: number;
   timeZone?: string;
   to?: string | null | undefined;
 };
 export type TopPageTracksQuery$variables = {
-  by: RankBy;
-  filter: StatsFilter;
+  by: SpotifyRankBy;
+  filter: SpotifyStatsFilter;
 };
 export type TopPageTracksQuery$data = {
   readonly " $fragmentSpreads": FragmentRefs<"TopPageTracks_query">;
@@ -96,15 +96,15 @@ return {
         "args": [
           (v3/*:: as any*/)
         ],
-        "concreteType": "Stats",
+        "concreteType": "SpotifyStats",
         "kind": "LinkedField",
-        "name": "stats",
+        "name": "spotifyStats",
         "plural": false,
         "selections": [
           {
             "alias": null,
             "args": (v4/*:: as any*/),
-            "concreteType": "RankedItemConnection",
+            "concreteType": "SpotifyItemRankedConnection",
             "kind": "LinkedField",
             "name": "topItems",
             "plural": false,
@@ -112,7 +112,7 @@ return {
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "RankedItemEdge",
+                "concreteType": "SpotifyItemRankedEdge",
                 "kind": "LinkedField",
                 "name": "edges",
                 "plural": true,
@@ -141,7 +141,7 @@ return {
                   {
                     "alias": null,
                     "args": null,
-                    "concreteType": "Item",
+                    "concreteType": "SpotifyItem",
                     "kind": "LinkedField",
                     "name": "node",
                     "plural": false,
@@ -246,16 +246,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "b89552d8f5e2e7868d34f2e38342ade2",
+    "cacheID": "77262861ed4acb5e4ce9cdade3c6bf58",
     "id": null,
     "metadata": {},
     "name": "TopPageTracksQuery",
     "operationKind": "query",
-    "text": "query TopPageTracksQuery(\n  $filter: StatsFilter!\n  $by: RankBy!\n) {\n  ...TopPageTracks_query_9zxt2\n}\n\nfragment TopPageTracks_query_9zxt2 on Query {\n  stats(filter: $filter) {\n    topItems(first: 50, by: $by) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          uri\n          name\n          artistName\n          artworkUrl\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
+    "text": "query TopPageTracksQuery(\n  $filter: SpotifyStatsFilter!\n  $by: SpotifyRankBy!\n) {\n  ...TopPageTracks_query_9zxt2\n}\n\nfragment TopPageTracks_query_9zxt2 on Query {\n  spotifyStats(filter: $filter) {\n    topItems(first: 50, by: $by) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          uri\n          name\n          artistName\n          artworkUrl\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "479be6b24e911faa2ce885cc27a09059";
+(node as any).hash = "1ee486e6a7cda253dd27db2eb0328167";
 
 export default node;

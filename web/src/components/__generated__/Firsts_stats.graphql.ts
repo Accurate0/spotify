@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<91630a0613f794c1437f0fa874d08b26>>
+ * @generated SignedSource<<a2f2acbd012514c05c36679198a7b0a8>>
  * @lightSyntaxTransform
  */
 
@@ -46,7 +46,7 @@ const node: ReaderFragment = {
     {
       "alias": null,
       "args": null,
-      "concreteType": "Play",
+      "concreteType": "SpotifyPlay",
       "kind": "LinkedField",
       "name": "firstPlay",
       "plural": false,
@@ -61,7 +61,7 @@ const node: ReaderFragment = {
         {
           "alias": null,
           "args": null,
-          "concreteType": "Item",
+          "concreteType": "SpotifyItem",
           "kind": "LinkedField",
           "name": "item",
           "plural": false,
@@ -95,7 +95,7 @@ const node: ReaderFragment = {
           "value": 1
         }
       ],
-      "concreteType": "DayStat",
+      "concreteType": "SpotifyDayStat",
       "kind": "LinkedField",
       "name": "topDays",
       "plural": true,
@@ -127,7 +127,7 @@ const node: ReaderFragment = {
     {
       "alias": null,
       "args": null,
-      "concreteType": "ListeningDays",
+      "concreteType": "SpotifyListeningDays",
       "kind": "LinkedField",
       "name": "listeningDays",
       "plural": false,
@@ -142,7 +142,7 @@ const node: ReaderFragment = {
         {
           "alias": null,
           "args": null,
-          "concreteType": "Streak",
+          "concreteType": "SpotifyStreak",
           "kind": "LinkedField",
           "name": "longestStreak",
           "plural": false,
@@ -175,10 +175,10 @@ const node: ReaderFragment = {
       "storageKey": null
     }
   ],
-  "type": "Stats",
+  "type": "SpotifyStats",
   "abstractKey": null
 };
 
-(node as any).hash = "bb2a9da221886e81998dac487fba18b8";
+(node as any).hash = "c7d716c8cc9b7e22c8819ccfeed2f6e8";
 
 export default node;

@@ -4,8 +4,8 @@ import tailwindcss from "@tailwindcss/vite";
 import relay from "vite-plugin-relay";
 import path from "path";
 
-// In dev, proxy the API to a locally running backend (cargo run serves on :8000) so the
-// SPA uses the same relative /v1/graphql URL as in production, where both share a host.
+// In dev, proxy /v1/graphql to a locally running backend (cargo run serves on :8000); production
+// talks to the graph router instead.
 const BACKEND = process.env.BACKEND_URL ?? "http://localhost:8000";
 
 export default defineConfig({

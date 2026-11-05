@@ -6,10 +6,10 @@ import { formatDateTime, formatPlayLength } from "@/lib/format";
 export default function PlayHistory({ item }: { item: PlayHistory_item$key }) {
   const { data, loadNext, hasNext, isLoadingNext } = usePaginationFragment(
     graphql`
-      fragment PlayHistory_item on Item
+      fragment PlayHistory_item on SpotifyItem
       @refetchable(queryName: "PlayHistoryPaginationQuery")
       @argumentDefinitions(
-        filter: { type: "StatsFilter!" }
+        filter: { type: "SpotifyStatsFilter!" }
         first: { type: "Int", defaultValue: 20 }
         after: { type: "String" }
       ) {

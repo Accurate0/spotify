@@ -14,6 +14,7 @@ use crate::stats::{
 };
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyStreak")]
 pub struct Streak {
     pub start: NaiveDate,
     pub end: NaiveDate,
@@ -21,7 +22,7 @@ pub struct Streak {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "ListeningDays")]
+#[cynic(graphql_type = "SpotifyListeningDays")]
 pub struct StreakDays {
     pub active_days: i32,
     pub span_days: i32,
@@ -30,7 +31,7 @@ pub struct StreakDays {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "DayStat")]
+#[cynic(graphql_type = "SpotifyDayStat")]
 pub struct PeakDay {
     pub date: NaiveDate,
     pub plays: i32,
@@ -39,13 +40,14 @@ pub struct PeakDay {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "Play")]
+#[cynic(graphql_type = "SpotifyPlay")]
 pub struct FirstPlay {
     pub ts: DateTime<Utc>,
     pub item: Option<Item>,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifySession")]
 pub struct Session {
     pub start: DateTime<Utc>,
     pub plays: i32,
@@ -53,6 +55,7 @@ pub struct Session {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifySessions")]
 pub struct Sessions {
     pub count: i32,
     pub average_minutes: Option<f64>,
@@ -60,6 +63,7 @@ pub struct Sessions {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyRepeatDay")]
 pub struct RepeatDay {
     pub date: NaiveDate,
     pub plays: i32,
@@ -67,6 +71,7 @@ pub struct RepeatDay {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyDiscovery")]
 pub struct Discovery {
     pub artist: Artist,
     pub first_played: DateTime<Utc>,
@@ -75,16 +80,19 @@ pub struct Discovery {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyDiscoveryEdge")]
 pub struct DiscoveryEdge {
     pub node: Discovery,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyDiscoveryConnection")]
 pub struct DiscoveryConnection {
     pub edges: Vec<DiscoveryEdge>,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyForgottenArtist")]
 pub struct ForgottenArtist {
     pub artist: Artist,
     pub minutes_played: i32,
@@ -92,17 +100,19 @@ pub struct ForgottenArtist {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyForgottenArtistEdge")]
 pub struct ForgottenArtistEdge {
     pub node: ForgottenArtist,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyForgottenArtistConnection")]
 pub struct ForgottenArtistConnection {
     pub edges: Vec<ForgottenArtistEdge>,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "Stats")]
+#[cynic(graphql_type = "SpotifyStats")]
 pub struct InsightsStats {
     pub listening_days: StreakDays,
     pub sessions: Sessions,
@@ -120,10 +130,11 @@ pub struct InsightsStats {
 #[cynic(graphql_type = "Query", variables = "FilterVariables")]
 pub struct InsightsQuery {
     #[arguments(filter: $filter)]
-    pub stats: InsightsStats,
+    pub spotify_stats: InsightsStats,
 }
 
 #[derive(cynic::Enum, Clone, Copy, Debug, ValueEnum)]
+#[cynic(graphql_type = "SpotifyBreakdownDimension")]
 pub enum BreakdownDimension {
     Device,
     Country,
@@ -135,12 +146,14 @@ pub enum BreakdownDimension {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyCompletion")]
 pub struct Completion {
     pub average: Option<f64>,
     pub finished_share: Option<f64>,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyEnrichment")]
 pub struct Enrichment {
     pub tracks_enriched: i32,
     pub tracks_pending: i32,
@@ -157,12 +170,12 @@ pub struct Enrichment {
 #[derive(cynic::QueryFragment, Debug)]
 #[cynic(graphql_type = "Query")]
 pub struct EnrichmentQuery {
-    pub enrichment: Enrichment,
+    pub spotify_enrichment: Enrichment,
 }
 
 /// Progress of the Spotify Web API backfill.
 pub async fn enrichment(client: &Client, tz: Tz) -> anyhow::Result<()> {
-    let e = client.run(EnrichmentQuery::build(())).await?.enrichment;
+    let e = client.run(EnrichmentQuery::build(())).await?.spotify_enrichment;
     println!(
         "Tracks     {} enriched, {} pending, {} no longer on Spotify",
         e.tracks_enriched, e.tracks_pending, e.tracks_missing
@@ -199,6 +212,7 @@ pub struct BreakdownVariables {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyBreakdownRow")]
 pub struct BreakdownRow {
     pub label: String,
     pub plays: i32,
@@ -206,7 +220,7 @@ pub struct BreakdownRow {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "Stats", variables = "BreakdownVariables")]
+#[cynic(graphql_type = "SpotifyStats", variables = "BreakdownVariables")]
 pub struct BreakdownStats {
     #[arguments(by: $by)]
     pub breakdown: Vec<BreakdownRow>,
@@ -216,10 +230,11 @@ pub struct BreakdownStats {
 #[cynic(graphql_type = "Query", variables = "BreakdownVariables")]
 pub struct BreakdownQuery {
     #[arguments(filter: $filter)]
-    pub stats: BreakdownStats,
+    pub spotify_stats: BreakdownStats,
 }
 
 #[derive(cynic::Enum, Clone, Copy, Debug)]
+#[cynic(graphql_type = "SpotifySkipOrder")]
 pub enum SkipOrder {
     MostSkipped,
     LeastSkipped,
@@ -234,6 +249,7 @@ pub struct ArtistSkipsVariables {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyArtistSkipRate")]
 pub struct ArtistSkipRate {
     pub rank: i32,
     pub artist: Artist,
@@ -243,7 +259,7 @@ pub struct ArtistSkipRate {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "Stats", variables = "ArtistSkipsVariables")]
+#[cynic(graphql_type = "SpotifyStats", variables = "ArtistSkipsVariables")]
 pub struct ArtistSkipsStats {
     #[arguments(order: $order, first: $first, minPlays: $min_plays)]
     pub artist_skip_rates: Vec<ArtistSkipRate>,
@@ -253,7 +269,7 @@ pub struct ArtistSkipsStats {
 #[cynic(graphql_type = "Query", variables = "ArtistSkipsVariables")]
 pub struct ArtistSkipsQuery {
     #[arguments(filter: $filter)]
-    pub stats: ArtistSkipsStats,
+    pub spotify_stats: ArtistSkipsStats,
 }
 
 #[derive(cynic::QueryVariables)]
@@ -264,6 +280,7 @@ pub struct SkippedVariables {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifySkippedItem")]
 pub struct SkippedItem {
     pub item: Item,
     pub plays: i32,
@@ -272,7 +289,7 @@ pub struct SkippedItem {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "Stats", variables = "SkippedVariables")]
+#[cynic(graphql_type = "SpotifyStats", variables = "SkippedVariables")]
 pub struct SkippedStats {
     #[arguments(first: $first, minPlays: $min_plays)]
     pub most_skipped: Vec<SkippedItem>,
@@ -282,7 +299,7 @@ pub struct SkippedStats {
 #[cynic(graphql_type = "Query", variables = "SkippedVariables")]
 pub struct SkippedQuery {
     #[arguments(filter: $filter)]
-    pub stats: SkippedStats,
+    pub spotify_stats: SkippedStats,
 }
 
 fn date(ts: DateTime<Utc>, tz: Tz) -> String {
@@ -324,7 +341,7 @@ pub async fn insights(client: &Client, filter: &FilterArgs) -> anyhow::Result<()
             filter: filter.resolve(client).await?,
         }))
         .await?
-        .stats;
+        .spotify_stats;
 
     let days = &stats.listening_days;
     println!("Days");
@@ -418,7 +435,7 @@ pub async fn breakdown(
             by,
         }))
         .await?
-        .stats
+        .spotify_stats
         .breakdown;
 
     let total: i64 = rows
@@ -460,7 +477,7 @@ pub async fn skipped_artists(
             },
         }))
         .await?
-        .stats
+        .spotify_stats
         .artist_skip_rates;
 
     if rows.is_empty() {
@@ -492,7 +509,7 @@ pub async fn skipped(
             min_plays,
         }))
         .await?
-        .stats
+        .spotify_stats
         .most_skipped;
 
     if items.is_empty() {

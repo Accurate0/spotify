@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<4511fec7e0ad9a08a28449f017ad2fb5>>
+ * @generated SignedSource<<8b856b5091bee7c19eefc4b7c6bee782>>
  * @lightSyntaxTransform
  */
 
@@ -9,20 +9,20 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
-export type ItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
-export type RankBy = "MINUTES_PLAYED" | "PLAYS" | "%future added value";
-export type StatsFilter = {
+export type SpotifyItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
+export type SpotifyRankBy = "MINUTES_PLAYED" | "PLAYS" | "%future added value";
+export type SpotifyStatsFilter = {
   accounts?: ReadonlyArray<string>;
   from?: string | null | undefined;
-  kinds?: ReadonlyArray<ItemKind>;
+  kinds?: ReadonlyArray<SpotifyItemKind>;
   minMsPlayed?: number;
   timeZone?: string;
   to?: string | null | undefined;
 };
 export type TopPageTracksPaginationQuery$variables = {
   after?: string | null | undefined;
-  by: RankBy;
-  filter: StatsFilter;
+  by: SpotifyRankBy;
+  filter: SpotifyStatsFilter;
   first?: number | null | undefined;
 };
 export type TopPageTracksPaginationQuery$data = {
@@ -113,15 +113,15 @@ return {
         "args": [
           (v3/*:: as any*/)
         ],
-        "concreteType": "Stats",
+        "concreteType": "SpotifyStats",
         "kind": "LinkedField",
-        "name": "stats",
+        "name": "spotifyStats",
         "plural": false,
         "selections": [
           {
             "alias": null,
             "args": (v5/*:: as any*/),
-            "concreteType": "RankedItemConnection",
+            "concreteType": "SpotifyItemRankedConnection",
             "kind": "LinkedField",
             "name": "topItems",
             "plural": false,
@@ -129,7 +129,7 @@ return {
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "RankedItemEdge",
+                "concreteType": "SpotifyItemRankedEdge",
                 "kind": "LinkedField",
                 "name": "edges",
                 "plural": true,
@@ -158,7 +158,7 @@ return {
                   {
                     "alias": null,
                     "args": null,
-                    "concreteType": "Item",
+                    "concreteType": "SpotifyItem",
                     "kind": "LinkedField",
                     "name": "node",
                     "plural": false,
@@ -263,16 +263,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "9cf40f713ba49a47d6889770f8c2352f",
+    "cacheID": "3d9b00d5482a598d0e5af46d9fb09155",
     "id": null,
     "metadata": {},
     "name": "TopPageTracksPaginationQuery",
     "operationKind": "query",
-    "text": "query TopPageTracksPaginationQuery(\n  $after: String\n  $by: RankBy!\n  $filter: StatsFilter!\n  $first: Int = 50\n) {\n  ...TopPageTracks_query_19NMb\n}\n\nfragment TopPageTracks_query_19NMb on Query {\n  stats(filter: $filter) {\n    topItems(first: $first, after: $after, by: $by) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          uri\n          name\n          artistName\n          artworkUrl\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
+    "text": "query TopPageTracksPaginationQuery(\n  $after: String\n  $by: SpotifyRankBy!\n  $filter: SpotifyStatsFilter!\n  $first: Int = 50\n) {\n  ...TopPageTracks_query_19NMb\n}\n\nfragment TopPageTracks_query_19NMb on Query {\n  spotifyStats(filter: $filter) {\n    topItems(first: $first, after: $after, by: $by) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          uri\n          name\n          artistName\n          artworkUrl\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "a7be6cf8fbb94630a5a5d21dd4bac769";
+(node as any).hash = "a5baca57c814c732ec1b8e526b7e92c6";
 
 export default node;

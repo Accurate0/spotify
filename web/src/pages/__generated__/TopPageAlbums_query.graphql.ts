@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<3f310664cb9d98abdb3e0ac245801de1>>
+ * @generated SignedSource<<c1b2ce96d2f5726da9cee101b72b191a>>
  * @lightSyntaxTransform
  */
 
@@ -10,7 +10,7 @@
 import { ReaderFragment } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type TopPageAlbums_query$data = {
-  readonly stats: {
+  readonly spotifyStats: {
     readonly topAlbums: {
       readonly edges: ReadonlyArray<{
         readonly minutesPlayed: number;
@@ -37,7 +37,7 @@ import TopPageAlbumsPaginationQuery_graphql from './TopPageAlbumsPaginationQuery
 
 const node: ReaderFragment = (function(){
 var v0 = [
-  "stats",
+  "spotifyStats",
   "topAlbums"
 ],
 v1 = {
@@ -104,9 +104,9 @@ return {
           "variableName": "filter"
         }
       ],
-      "concreteType": "Stats",
+      "concreteType": "SpotifyStats",
       "kind": "LinkedField",
-      "name": "stats",
+      "name": "spotifyStats",
       "plural": false,
       "selections": [
         {
@@ -118,7 +118,7 @@ return {
               "variableName": "by"
             }
           ],
-          "concreteType": "RankedAlbumConnection",
+          "concreteType": "SpotifyAlbumRankedConnection",
           "kind": "LinkedField",
           "name": "__TopPageAlbums_topAlbums_connection",
           "plural": false,
@@ -126,7 +126,7 @@ return {
             {
               "alias": null,
               "args": null,
-              "concreteType": "RankedAlbumEdge",
+              "concreteType": "SpotifyAlbumRankedEdge",
               "kind": "LinkedField",
               "name": "edges",
               "plural": true,
@@ -155,7 +155,7 @@ return {
                 {
                   "alias": null,
                   "args": null,
-                  "concreteType": "Album",
+                  "concreteType": "SpotifyAlbum",
                   "kind": "LinkedField",
                   "name": "node",
                   "plural": false,
@@ -171,7 +171,7 @@ return {
                     {
                       "alias": null,
                       "args": null,
-                      "concreteType": "Artist",
+                      "concreteType": "SpotifyArtist",
                       "kind": "LinkedField",
                       "name": "artist",
                       "plural": false,
@@ -237,6 +237,6 @@ return {
 };
 })();
 
-(node as any).hash = "13924e27129981118d26a3209b44c1d7";
+(node as any).hash = "cd17d435d0ffd46c845a1ecca5582e6d";
 
 export default node;

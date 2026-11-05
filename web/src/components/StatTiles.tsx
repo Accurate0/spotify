@@ -31,7 +31,7 @@ export default function StatTiles({
 }) {
   const data = useFragment(
     graphql`
-      fragment StatTiles_summary on Summary {
+      fragment StatTiles_summary on SpotifySummary {
         plays
         minutesPlayed
         distinctTracks

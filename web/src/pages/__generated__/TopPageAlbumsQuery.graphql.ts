@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<a2ee11fa833220bb7a2f5edb086ea6f7>>
+ * @generated SignedSource<<465a7a1adc750d5e6e91623e7ec9e5c7>>
  * @lightSyntaxTransform
  */
 
@@ -9,19 +9,19 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
-export type ItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
-export type RankBy = "MINUTES_PLAYED" | "PLAYS" | "%future added value";
-export type StatsFilter = {
+export type SpotifyItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
+export type SpotifyRankBy = "MINUTES_PLAYED" | "PLAYS" | "%future added value";
+export type SpotifyStatsFilter = {
   accounts?: ReadonlyArray<string>;
   from?: string | null | undefined;
-  kinds?: ReadonlyArray<ItemKind>;
+  kinds?: ReadonlyArray<SpotifyItemKind>;
   minMsPlayed?: number;
   timeZone?: string;
   to?: string | null | undefined;
 };
 export type TopPageAlbumsQuery$variables = {
-  by: RankBy;
-  filter: StatsFilter;
+  by: SpotifyRankBy;
+  filter: SpotifyStatsFilter;
 };
 export type TopPageAlbumsQuery$data = {
   readonly " $fragmentSpreads": FragmentRefs<"TopPageAlbums_query">;
@@ -103,15 +103,15 @@ return {
         "args": [
           (v3/*:: as any*/)
         ],
-        "concreteType": "Stats",
+        "concreteType": "SpotifyStats",
         "kind": "LinkedField",
-        "name": "stats",
+        "name": "spotifyStats",
         "plural": false,
         "selections": [
           {
             "alias": null,
             "args": (v4/*:: as any*/),
-            "concreteType": "RankedAlbumConnection",
+            "concreteType": "SpotifyAlbumRankedConnection",
             "kind": "LinkedField",
             "name": "topAlbums",
             "plural": false,
@@ -119,7 +119,7 @@ return {
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "RankedAlbumEdge",
+                "concreteType": "SpotifyAlbumRankedEdge",
                 "kind": "LinkedField",
                 "name": "edges",
                 "plural": true,
@@ -148,7 +148,7 @@ return {
                   {
                     "alias": null,
                     "args": null,
-                    "concreteType": "Album",
+                    "concreteType": "SpotifyAlbum",
                     "kind": "LinkedField",
                     "name": "node",
                     "plural": false,
@@ -164,7 +164,7 @@ return {
                       {
                         "alias": null,
                         "args": null,
-                        "concreteType": "Artist",
+                        "concreteType": "SpotifyArtist",
                         "kind": "LinkedField",
                         "name": "artist",
                         "plural": false,
@@ -245,16 +245,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "32424e99bcadf4ef59eda0b7254bc8ac",
+    "cacheID": "bf597b447487f84739d64fed9edd9b36",
     "id": null,
     "metadata": {},
     "name": "TopPageAlbumsQuery",
     "operationKind": "query",
-    "text": "query TopPageAlbumsQuery(\n  $filter: StatsFilter!\n  $by: RankBy!\n) {\n  ...TopPageAlbums_query_9zxt2\n}\n\nfragment TopPageAlbums_query_9zxt2 on Query {\n  stats(filter: $filter) {\n    topAlbums(first: 50, by: $by) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          name\n          artworkUrl\n          artist {\n            name\n            id\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
+    "text": "query TopPageAlbumsQuery(\n  $filter: SpotifyStatsFilter!\n  $by: SpotifyRankBy!\n) {\n  ...TopPageAlbums_query_9zxt2\n}\n\nfragment TopPageAlbums_query_9zxt2 on Query {\n  spotifyStats(filter: $filter) {\n    topAlbums(first: 50, by: $by) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          name\n          artworkUrl\n          artist {\n            name\n            id\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "940c7a72b36b5d5ea614a259fb034e96";
+(node as any).hash = "71008b0cf0a93f1d4963a960f1753445";
 
 export default node;

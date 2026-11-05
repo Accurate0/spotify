@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<3a8f0ab01e935e808d3dd7da80a41752>>
+ * @generated SignedSource<<5ae32be636782f5586d81302ea81ae75>>
  * @lightSyntaxTransform
  */
 
@@ -97,7 +97,7 @@ return {
           "variableName": "filter"
         }
       ],
-      "concreteType": "Stats",
+      "concreteType": "SpotifyStats",
       "kind": "LinkedField",
       "name": "stats",
       "plural": false,
@@ -105,7 +105,7 @@ return {
         {
           "alias": "plays",
           "args": null,
-          "concreteType": "PlayConnection",
+          "concreteType": "SpotifyPlayConnection",
           "kind": "LinkedField",
           "name": "__PlayHistory_plays_connection",
           "plural": false,
@@ -113,7 +113,7 @@ return {
             {
               "alias": null,
               "args": null,
-              "concreteType": "PlayEdge",
+              "concreteType": "SpotifyPlayEdge",
               "kind": "LinkedField",
               "name": "edges",
               "plural": true,
@@ -121,7 +121,7 @@ return {
                 {
                   "alias": null,
                   "args": null,
-                  "concreteType": "Play",
+                  "concreteType": "SpotifyPlay",
                   "kind": "LinkedField",
                   "name": "node",
                   "plural": false,
@@ -150,7 +150,7 @@ return {
                     {
                       "alias": null,
                       "args": null,
-                      "concreteType": "Account",
+                      "concreteType": "SpotifyAccount",
                       "kind": "LinkedField",
                       "name": "account",
                       "plural": false,
@@ -224,11 +224,11 @@ return {
       "storageKey": null
     }
   ],
-  "type": "Item",
+  "type": "SpotifyItem",
   "abstractKey": null
 };
 })();
 
-(node as any).hash = "628f14f06ece2e5111f27ff9d7c64d77";
+(node as any).hash = "940c285d18eab509d38ee4c68212200f";
 
 export default node;

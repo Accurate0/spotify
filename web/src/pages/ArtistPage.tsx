@@ -14,10 +14,10 @@ import { itemPath } from "@/lib/paths";
 function ArtistTracks({ artist }: { artist: ArtistPageTracks_artist$key }) {
   const { data, loadNext, hasNext, isLoadingNext } = usePaginationFragment(
     graphql`
-      fragment ArtistPageTracks_artist on Artist
+      fragment ArtistPageTracks_artist on SpotifyArtist
       @refetchable(queryName: "ArtistPageTracksPaginationQuery")
       @argumentDefinitions(
-        filter: { type: "StatsFilter!" }
+        filter: { type: "SpotifyStatsFilter!" }
         first: { type: "Int", defaultValue: 20 }
         after: { type: "String" }
       ) {
@@ -84,8 +84,8 @@ export default function ArtistPage() {
 
   const data = useLazyLoadQuery<ArtistPageQuery>(
     graphql`
-      query ArtistPageQuery($name: String!, $filter: StatsFilter!) {
-        artist(name: $name) {
+      query ArtistPageQuery($name: String!, $filter: SpotifyStatsFilter!) {
+        spotifyArtist(name: $name) {
           name
           imageUrl
           genres
@@ -105,7 +105,7 @@ export default function ArtistPage() {
     { name, filter },
   );
 
-  const artist = data.artist;
+  const artist = data.spotifyArtist;
   if (!artist) {
     return <p className="text-muted-foreground">No artist named “{name}”.</p>;
   }

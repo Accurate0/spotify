@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<5515b9c28e8573c0ea7966732e2049a2>>
+ * @generated SignedSource<<a1e1253449744815f3a393877234a994>>
  * @lightSyntaxTransform
  */
 
@@ -9,18 +9,18 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
-export type ItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
-export type StatsFilter = {
+export type SpotifyItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
+export type SpotifyStatsFilter = {
   accounts?: ReadonlyArray<string>;
   from?: string | null | undefined;
-  kinds?: ReadonlyArray<ItemKind>;
+  kinds?: ReadonlyArray<SpotifyItemKind>;
   minMsPlayed?: number;
   timeZone?: string;
   to?: string | null | undefined;
 };
 export type PlayHistoryPaginationQuery$variables = {
   after?: string | null | undefined;
-  filter: StatsFilter;
+  filter: SpotifyStatsFilter;
   first?: number | null | undefined;
   id: string;
 };
@@ -152,7 +152,7 @@ return {
                 "args": [
                   (v3/*:: as any*/)
                 ],
-                "concreteType": "Stats",
+                "concreteType": "SpotifyStats",
                 "kind": "LinkedField",
                 "name": "stats",
                 "plural": false,
@@ -160,7 +160,7 @@ return {
                   {
                     "alias": null,
                     "args": (v7/*:: as any*/),
-                    "concreteType": "PlayConnection",
+                    "concreteType": "SpotifyPlayConnection",
                     "kind": "LinkedField",
                     "name": "plays",
                     "plural": false,
@@ -168,7 +168,7 @@ return {
                       {
                         "alias": null,
                         "args": null,
-                        "concreteType": "PlayEdge",
+                        "concreteType": "SpotifyPlayEdge",
                         "kind": "LinkedField",
                         "name": "edges",
                         "plural": true,
@@ -176,7 +176,7 @@ return {
                           {
                             "alias": null,
                             "args": null,
-                            "concreteType": "Play",
+                            "concreteType": "SpotifyPlay",
                             "kind": "LinkedField",
                             "name": "node",
                             "plural": false,
@@ -205,7 +205,7 @@ return {
                               {
                                 "alias": null,
                                 "args": null,
-                                "concreteType": "Account",
+                                "concreteType": "SpotifyAccount",
                                 "kind": "LinkedField",
                                 "name": "account",
                                 "plural": false,
@@ -276,7 +276,7 @@ return {
                 "storageKey": null
               }
             ],
-            "type": "Item",
+            "type": "SpotifyItem",
             "abstractKey": null
           }
         ],
@@ -285,16 +285,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "b4cc8fdce7f4166f405b0ebc16e1d85a",
+    "cacheID": "c66c3aca62f9c0ea80a667664c390f90",
     "id": null,
     "metadata": {},
     "name": "PlayHistoryPaginationQuery",
     "operationKind": "query",
-    "text": "query PlayHistoryPaginationQuery(\n  $after: String\n  $filter: StatsFilter!\n  $first: Int = 20\n  $id: ID!\n) {\n  node(id: $id) {\n    __typename\n    ...PlayHistory_item_G9cLv\n    id\n  }\n}\n\nfragment PlayHistory_item_G9cLv on Item {\n  stats(filter: $filter) {\n    plays(first: $first, after: $after) {\n      edges {\n        node {\n          ts\n          msPlayed\n          skipped\n          account {\n            displayName\n            id\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n  id\n}\n"
+    "text": "query PlayHistoryPaginationQuery(\n  $after: String\n  $filter: SpotifyStatsFilter!\n  $first: Int = 20\n  $id: ID!\n) {\n  node(id: $id) {\n    __typename\n    ...PlayHistory_item_G9cLv\n    id\n  }\n}\n\nfragment PlayHistory_item_G9cLv on SpotifyItem {\n  stats(filter: $filter) {\n    plays(first: $first, after: $after) {\n      edges {\n        node {\n          ts\n          msPlayed\n          skipped\n          account {\n            displayName\n            id\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n  id\n}\n"
   }
 };
 })();
 
-(node as any).hash = "628f14f06ece2e5111f27ff9d7c64d77";
+(node as any).hash = "940c285d18eab509d38ee4c68212200f";
 
 export default node;

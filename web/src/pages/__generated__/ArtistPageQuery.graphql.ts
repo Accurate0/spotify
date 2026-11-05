@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<5dfc383d86e4328b3ab8c040e518391b>>
+ * @generated SignedSource<<6a4cd067194c8806e26e85dfe651c581>>
  * @lightSyntaxTransform
  */
 
@@ -9,21 +9,21 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
-export type ItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
-export type StatsFilter = {
+export type SpotifyItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
+export type SpotifyStatsFilter = {
   accounts?: ReadonlyArray<string>;
   from?: string | null | undefined;
-  kinds?: ReadonlyArray<ItemKind>;
+  kinds?: ReadonlyArray<SpotifyItemKind>;
   minMsPlayed?: number;
   timeZone?: string;
   to?: string | null | undefined;
 };
 export type ArtistPageQuery$variables = {
-  filter: StatsFilter;
+  filter: SpotifyStatsFilter;
   name: string;
 };
 export type ArtistPageQuery$data = {
-  readonly artist: {
+  readonly spotifyArtist: {
     readonly genres: ReadonlyArray<string>;
     readonly imageUrl: string | null | undefined;
     readonly name: string;
@@ -152,9 +152,9 @@ return {
       {
         "alias": null,
         "args": (v2/*:: as any*/),
-        "concreteType": "Artist",
+        "concreteType": "SpotifyArtist",
         "kind": "LinkedField",
-        "name": "artist",
+        "name": "spotifyArtist",
         "plural": false,
         "selections": [
           (v3/*:: as any*/),
@@ -163,7 +163,7 @@ return {
           {
             "alias": null,
             "args": (v6/*:: as any*/),
-            "concreteType": "Stats",
+            "concreteType": "SpotifyStats",
             "kind": "LinkedField",
             "name": "stats",
             "plural": false,
@@ -171,7 +171,7 @@ return {
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "Summary",
+                "concreteType": "SpotifySummary",
                 "kind": "LinkedField",
                 "name": "summary",
                 "plural": false,
@@ -192,7 +192,7 @@ return {
               {
                 "alias": null,
                 "args": (v7/*:: as any*/),
-                "concreteType": "TimelinePoint",
+                "concreteType": "SpotifyTimelinePoint",
                 "kind": "LinkedField",
                 "name": "timeline",
                 "plural": true,
@@ -232,9 +232,9 @@ return {
       {
         "alias": null,
         "args": (v2/*:: as any*/),
-        "concreteType": "Artist",
+        "concreteType": "SpotifyArtist",
         "kind": "LinkedField",
-        "name": "artist",
+        "name": "spotifyArtist",
         "plural": false,
         "selections": [
           (v3/*:: as any*/),
@@ -243,7 +243,7 @@ return {
           {
             "alias": null,
             "args": (v6/*:: as any*/),
-            "concreteType": "Stats",
+            "concreteType": "SpotifyStats",
             "kind": "LinkedField",
             "name": "stats",
             "plural": false,
@@ -251,7 +251,7 @@ return {
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "Summary",
+                "concreteType": "SpotifySummary",
                 "kind": "LinkedField",
                 "name": "summary",
                 "plural": false,
@@ -299,7 +299,7 @@ return {
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "Play",
+                "concreteType": "SpotifyPlay",
                 "kind": "LinkedField",
                 "name": "firstPlay",
                 "plural": false,
@@ -314,7 +314,7 @@ return {
                   {
                     "alias": null,
                     "args": null,
-                    "concreteType": "Item",
+                    "concreteType": "SpotifyItem",
                     "kind": "LinkedField",
                     "name": "item",
                     "plural": false,
@@ -337,7 +337,7 @@ return {
                     "value": 1
                   }
                 ],
-                "concreteType": "DayStat",
+                "concreteType": "SpotifyDayStat",
                 "kind": "LinkedField",
                 "name": "topDays",
                 "plural": true,
@@ -357,7 +357,7 @@ return {
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "ListeningDays",
+                "concreteType": "SpotifyListeningDays",
                 "kind": "LinkedField",
                 "name": "listeningDays",
                 "plural": false,
@@ -372,7 +372,7 @@ return {
                   {
                     "alias": null,
                     "args": null,
-                    "concreteType": "Streak",
+                    "concreteType": "SpotifyStreak",
                     "kind": "LinkedField",
                     "name": "longestStreak",
                     "plural": false,
@@ -401,7 +401,7 @@ return {
               {
                 "alias": null,
                 "args": (v7/*:: as any*/),
-                "concreteType": "TimelinePoint",
+                "concreteType": "SpotifyTimelinePoint",
                 "kind": "LinkedField",
                 "name": "timeline",
                 "plural": true,
@@ -415,7 +415,7 @@ return {
               {
                 "alias": null,
                 "args": (v13/*:: as any*/),
-                "concreteType": "RankedItemConnection",
+                "concreteType": "SpotifyItemRankedConnection",
                 "kind": "LinkedField",
                 "name": "topItems",
                 "plural": false,
@@ -423,7 +423,7 @@ return {
                   {
                     "alias": null,
                     "args": null,
-                    "concreteType": "RankedItemEdge",
+                    "concreteType": "SpotifyItemRankedEdge",
                     "kind": "LinkedField",
                     "name": "edges",
                     "plural": true,
@@ -440,7 +440,7 @@ return {
                       {
                         "alias": null,
                         "args": null,
-                        "concreteType": "Item",
+                        "concreteType": "SpotifyItem",
                         "kind": "LinkedField",
                         "name": "node",
                         "plural": false,
@@ -458,7 +458,7 @@ return {
                           {
                             "alias": null,
                             "args": null,
-                            "concreteType": "Album",
+                            "concreteType": "SpotifyAlbum",
                             "kind": "LinkedField",
                             "name": "album",
                             "plural": false,
@@ -534,16 +534,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "6cd122b173ed8d7cdecd4d086835b5a6",
+    "cacheID": "60f5cc03d897c041966b0298350501ae",
     "id": null,
     "metadata": {},
     "name": "ArtistPageQuery",
     "operationKind": "query",
-    "text": "query ArtistPageQuery(\n  $name: String!\n  $filter: StatsFilter!\n) {\n  artist(name: $name) {\n    name\n    imageUrl\n    genres\n    stats(filter: $filter) {\n      summary {\n        ...StatTiles_summary\n      }\n      ...Firsts_stats\n      timeline(bucket: MONTH) {\n        ...TimelineChart_points\n      }\n    }\n    ...ArtistPageTracks_artist_Vt7Yj\n    id\n  }\n}\n\nfragment ArtistPageTracks_artist_Vt7Yj on Artist {\n  stats(filter: $filter) {\n    topItems(first: 20) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          uri\n          name\n          artworkUrl\n          album {\n            name\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n  id\n}\n\nfragment Firsts_stats on Stats {\n  firstPlay {\n    ts\n    item {\n      uri\n      name\n      id\n    }\n  }\n  topDays(first: 1) {\n    date\n    plays\n    minutesPlayed\n  }\n  listeningDays {\n    activeDays\n    longestStreak {\n      days\n      start\n      end\n    }\n  }\n}\n\nfragment StatTiles_summary on Summary {\n  plays\n  minutesPlayed\n  distinctTracks\n  distinctArtists\n  skipRate\n  firstPlayed\n  lastPlayed\n}\n\nfragment TimelineChart_points on TimelinePoint {\n  start\n  plays\n  minutesPlayed\n}\n"
+    "text": "query ArtistPageQuery(\n  $name: String!\n  $filter: SpotifyStatsFilter!\n) {\n  spotifyArtist(name: $name) {\n    name\n    imageUrl\n    genres\n    stats(filter: $filter) {\n      summary {\n        ...StatTiles_summary\n      }\n      ...Firsts_stats\n      timeline(bucket: MONTH) {\n        ...TimelineChart_points\n      }\n    }\n    ...ArtistPageTracks_artist_Vt7Yj\n    id\n  }\n}\n\nfragment ArtistPageTracks_artist_Vt7Yj on SpotifyArtist {\n  stats(filter: $filter) {\n    topItems(first: 20) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          uri\n          name\n          artworkUrl\n          album {\n            name\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n  id\n}\n\nfragment Firsts_stats on SpotifyStats {\n  firstPlay {\n    ts\n    item {\n      uri\n      name\n      id\n    }\n  }\n  topDays(first: 1) {\n    date\n    plays\n    minutesPlayed\n  }\n  listeningDays {\n    activeDays\n    longestStreak {\n      days\n      start\n      end\n    }\n  }\n}\n\nfragment StatTiles_summary on SpotifySummary {\n  plays\n  minutesPlayed\n  distinctTracks\n  distinctArtists\n  skipRate\n  firstPlayed\n  lastPlayed\n}\n\nfragment TimelineChart_points on SpotifyTimelinePoint {\n  start\n  plays\n  minutesPlayed\n}\n"
   }
 };
 })();
 
-(node as any).hash = "ff0b3f675a8cb438402b825dc2f1f98d";
+(node as any).hash = "7e26b3dce562bcfbe044b28ba9d49903";
 
 export default node;

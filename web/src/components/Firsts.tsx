@@ -17,7 +17,7 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
 export default function Firsts({ stats, showFirstTrack }: { stats: Firsts_stats$key; showFirstTrack: boolean }) {
   const data = useFragment(
     graphql`
-      fragment Firsts_stats on Stats {
+      fragment Firsts_stats on SpotifyStats {
         firstPlay {
           ts
           item {

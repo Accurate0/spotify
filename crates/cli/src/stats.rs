@@ -39,7 +39,7 @@ impl FilterArgs {
         let accounts = if self.account.is_empty() {
             None
         } else {
-            let all = client.run(AccountsQuery::build(())).await?.accounts;
+            let all = client.run(AccountsQuery::build(())).await?.spotify_accounts;
             let ids = self
                 .account
                 .iter()
@@ -104,6 +104,7 @@ impl FilterArgs {
 }
 
 #[derive(cynic::InputObject, Clone, Debug)]
+#[cynic(graphql_type = "SpotifyStatsFilter")]
 pub struct StatsFilter {
     #[cynic(skip_serializing_if = "Option::is_none")]
     pub accounts: Option<Vec<cynic::Id>>,
@@ -118,6 +119,7 @@ pub struct StatsFilter {
 }
 
 #[derive(cynic::Enum, Clone, Copy, Debug)]
+#[cynic(graphql_type = "SpotifyItemKind")]
 pub enum ItemKind {
     Track,
     Episode,
@@ -125,6 +127,7 @@ pub enum ItemKind {
 }
 
 #[derive(cynic::Enum, Clone, Copy, Debug, ValueEnum, Default)]
+#[cynic(graphql_type = "SpotifyRankBy")]
 pub enum RankBy {
     #[default]
     MinutesPlayed,
@@ -132,6 +135,7 @@ pub enum RankBy {
 }
 
 #[derive(cynic::Enum, Clone, Copy, Debug, ValueEnum)]
+#[cynic(graphql_type = "SpotifyTimeBucket")]
 pub enum TimeBucket {
     Day,
     Week,
@@ -140,6 +144,7 @@ pub enum TimeBucket {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifySummary")]
 pub struct Summary {
     pub plays: i32,
     pub minutes_played: i32,
@@ -151,11 +156,13 @@ pub struct Summary {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyArtist")]
 pub struct Artist {
     pub name: String,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyItem")]
 pub struct Item {
     pub uri: String,
     pub name: Option<String>,
@@ -164,12 +171,13 @@ pub struct Item {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "Album")]
+#[cynic(graphql_type = "SpotifyAlbum")]
 pub struct AlbumName {
     pub name: String,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyAlbum")]
 pub struct Album {
     pub name: String,
     pub artist: Option<Artist>,
@@ -188,7 +196,7 @@ pub struct RankVariables {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "Stats")]
+#[cynic(graphql_type = "SpotifyStats")]
 pub struct SummaryStats {
     pub summary: Summary,
 }
@@ -197,10 +205,11 @@ pub struct SummaryStats {
 #[cynic(graphql_type = "Query", variables = "FilterVariables")]
 pub struct SummaryQuery {
     #[arguments(filter: $filter)]
-    pub stats: SummaryStats,
+    pub spotify_stats: SummaryStats,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyArtistRankedEdge")]
 pub struct RankedArtistEdge {
     pub rank: i32,
     pub plays: i32,
@@ -209,12 +218,13 @@ pub struct RankedArtistEdge {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyArtistRankedConnection")]
 pub struct RankedArtistConnection {
     pub edges: Vec<RankedArtistEdge>,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "Stats", variables = "RankVariables")]
+#[cynic(graphql_type = "SpotifyStats", variables = "RankVariables")]
 pub struct TopArtistsStats {
     #[arguments(first: $first, by: $by)]
     pub top_artists: RankedArtistConnection,
@@ -224,10 +234,11 @@ pub struct TopArtistsStats {
 #[cynic(graphql_type = "Query", variables = "RankVariables")]
 pub struct TopArtistsQuery {
     #[arguments(filter: $filter)]
-    pub stats: TopArtistsStats,
+    pub spotify_stats: TopArtistsStats,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyItemRankedEdge")]
 pub struct RankedItemEdge {
     pub rank: i32,
     pub plays: i32,
@@ -236,12 +247,13 @@ pub struct RankedItemEdge {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyItemRankedConnection")]
 pub struct RankedItemConnection {
     pub edges: Vec<RankedItemEdge>,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "Stats", variables = "RankVariables")]
+#[cynic(graphql_type = "SpotifyStats", variables = "RankVariables")]
 pub struct TopItemsStats {
     #[arguments(first: $first, by: $by)]
     pub top_items: RankedItemConnection,
@@ -251,10 +263,11 @@ pub struct TopItemsStats {
 #[cynic(graphql_type = "Query", variables = "RankVariables")]
 pub struct TopItemsQuery {
     #[arguments(filter: $filter)]
-    pub stats: TopItemsStats,
+    pub spotify_stats: TopItemsStats,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyAlbumRankedEdge")]
 pub struct RankedAlbumEdge {
     pub rank: i32,
     pub plays: i32,
@@ -263,12 +276,13 @@ pub struct RankedAlbumEdge {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyAlbumRankedConnection")]
 pub struct RankedAlbumConnection {
     pub edges: Vec<RankedAlbumEdge>,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "Stats", variables = "RankVariables")]
+#[cynic(graphql_type = "SpotifyStats", variables = "RankVariables")]
 pub struct TopAlbumsStats {
     #[arguments(first: $first, by: $by)]
     pub top_albums: RankedAlbumConnection,
@@ -278,15 +292,17 @@ pub struct TopAlbumsStats {
 #[cynic(graphql_type = "Query", variables = "RankVariables")]
 pub struct TopAlbumsQuery {
     #[arguments(filter: $filter)]
-    pub stats: TopAlbumsStats,
+    pub spotify_stats: TopAlbumsStats,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyGenre")]
 pub struct Genre {
     pub name: String,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyGenreRankedEdge")]
 pub struct RankedGenreEdge {
     pub rank: i32,
     pub plays: i32,
@@ -295,12 +311,13 @@ pub struct RankedGenreEdge {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyGenreRankedConnection")]
 pub struct RankedGenreConnection {
     pub edges: Vec<RankedGenreEdge>,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "Stats", variables = "RankVariables")]
+#[cynic(graphql_type = "SpotifyStats", variables = "RankVariables")]
 pub struct TopGenresStats {
     #[arguments(first: $first, by: $by)]
     pub top_genres: RankedGenreConnection,
@@ -310,7 +327,7 @@ pub struct TopGenresStats {
 #[cynic(graphql_type = "Query", variables = "RankVariables")]
 pub struct TopGenresQuery {
     #[arguments(filter: $filter)]
-    pub stats: TopGenresStats,
+    pub spotify_stats: TopGenresStats,
 }
 
 #[derive(cynic::QueryVariables)]
@@ -320,6 +337,7 @@ pub struct TimelineVariables {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyTimelinePoint")]
 pub struct TimelinePoint {
     pub start: DateTime<Utc>,
     pub plays: i32,
@@ -327,7 +345,7 @@ pub struct TimelinePoint {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "Stats", variables = "TimelineVariables")]
+#[cynic(graphql_type = "SpotifyStats", variables = "TimelineVariables")]
 pub struct TimelineStats {
     #[arguments(bucket: $bucket)]
     pub timeline: Vec<TimelinePoint>,
@@ -337,10 +355,11 @@ pub struct TimelineStats {
 #[cynic(graphql_type = "Query", variables = "TimelineVariables")]
 pub struct TimelineQuery {
     #[arguments(filter: $filter)]
-    pub stats: TimelineStats,
+    pub spotify_stats: TimelineStats,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyHeatmapCell")]
 pub struct HeatmapCell {
     pub day_of_week: i32,
     pub hour: i32,
@@ -348,7 +367,7 @@ pub struct HeatmapCell {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "Stats")]
+#[cynic(graphql_type = "SpotifyStats")]
 pub struct HeatmapStats {
     pub heatmap: Vec<HeatmapCell>,
 }
@@ -357,7 +376,7 @@ pub struct HeatmapStats {
 #[cynic(graphql_type = "Query", variables = "FilterVariables")]
 pub struct HeatmapQuery {
     #[arguments(filter: $filter)]
-    pub stats: HeatmapStats,
+    pub spotify_stats: HeatmapStats,
 }
 
 #[derive(cynic::QueryVariables)]
@@ -367,27 +386,31 @@ pub struct SearchVariables {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyItemEdge")]
 pub struct ItemEdge {
     pub node: Item,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyItemConnection")]
 pub struct ItemConnection {
     pub edges: Vec<ItemEdge>,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyArtistEdge")]
 pub struct ArtistEdge {
     pub node: Artist,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyArtistConnection")]
 pub struct ArtistConnection {
     pub edges: Vec<ArtistEdge>,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(variables = "SearchVariables")]
+#[cynic(graphql_type = "SpotifySearch", variables = "SearchVariables")]
 pub struct Search {
     #[arguments(first: $first)]
     pub items: ItemConnection,
@@ -399,7 +422,7 @@ pub struct Search {
 #[cynic(graphql_type = "Query", variables = "SearchVariables")]
 pub struct SearchQuery {
     #[arguments(query: $query)]
-    pub search: Search,
+    pub spotify_search: Search,
 }
 
 #[derive(cynic::QueryVariables)]
@@ -410,12 +433,13 @@ pub struct ItemVariables {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "Account")]
+#[cynic(graphql_type = "SpotifyAccount")]
 pub struct AccountSlug {
     pub slug: String,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyPlay")]
 pub struct Play {
     pub ts: DateTime<Utc>,
     pub ms_played: i32,
@@ -424,17 +448,19 @@ pub struct Play {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyPlayEdge")]
 pub struct PlayEdge {
     pub node: Play,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyPlayConnection")]
 pub struct PlayConnection {
     pub edges: Vec<PlayEdge>,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "Stats", variables = "ItemVariables")]
+#[cynic(graphql_type = "SpotifyStats", variables = "ItemVariables")]
 pub struct ItemStats {
     pub summary: Summary,
     pub completion: crate::insights::Completion,
@@ -446,7 +472,7 @@ pub struct ItemStats {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "Item", variables = "ItemVariables")]
+#[cynic(graphql_type = "SpotifyItem", variables = "ItemVariables")]
 pub struct ItemDetail {
     pub uri: String,
     pub name: Option<String>,
@@ -462,7 +488,7 @@ pub struct ItemDetail {
 #[cynic(graphql_type = "Query", variables = "ItemVariables")]
 pub struct ItemQuery {
     #[arguments(uri: $uri)]
-    pub item: Option<ItemDetail>,
+    pub spotify_item: Option<ItemDetail>,
 }
 
 #[derive(cynic::QueryVariables)]
@@ -473,13 +499,13 @@ pub struct ArtistVariables {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "RankedItemConnection")]
+#[cynic(graphql_type = "SpotifyItemRankedConnection")]
 pub struct ArtistTopItems {
     pub edges: Vec<RankedItemEdge>,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "Stats", variables = "ArtistVariables")]
+#[cynic(graphql_type = "SpotifyStats", variables = "ArtistVariables")]
 pub struct ArtistStats {
     pub summary: Summary,
     pub first_play: Option<crate::insights::FirstPlay>,
@@ -491,7 +517,7 @@ pub struct ArtistStats {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "Artist", variables = "ArtistVariables")]
+#[cynic(graphql_type = "SpotifyArtist", variables = "ArtistVariables")]
 pub struct ArtistDetail {
     pub name: String,
     #[arguments(filter: $filter)]
@@ -502,7 +528,7 @@ pub struct ArtistDetail {
 #[cynic(graphql_type = "Query", variables = "ArtistVariables")]
 pub struct ArtistQuery {
     #[arguments(name: $name)]
-    pub artist: Option<ArtistDetail>,
+    pub spotify_artist: Option<ArtistDetail>,
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -519,7 +545,7 @@ pub async fn summary(client: &Client, filter: &FilterArgs) -> anyhow::Result<()>
     let summary = client
         .run(SummaryQuery::build(FilterVariables { filter }))
         .await?
-        .stats
+        .spotify_stats
         .summary;
     print_summary(&summary);
     Ok(())
@@ -542,7 +568,7 @@ pub async fn top(
         TopKind::Artists => client
             .run(TopArtistsQuery::build(vars))
             .await?
-            .stats
+            .spotify_stats
             .top_artists
             .edges
             .into_iter()
@@ -551,7 +577,7 @@ pub async fn top(
         TopKind::Tracks => client
             .run(TopItemsQuery::build(vars))
             .await?
-            .stats
+            .spotify_stats
             .top_items
             .edges
             .into_iter()
@@ -560,7 +586,7 @@ pub async fn top(
         TopKind::Albums => client
             .run(TopAlbumsQuery::build(vars))
             .await?
-            .stats
+            .spotify_stats
             .top_albums
             .edges
             .into_iter()
@@ -575,7 +601,7 @@ pub async fn top(
         TopKind::Genres => client
             .run(TopGenresQuery::build(vars))
             .await?
-            .stats
+            .spotify_stats
             .top_genres
             .edges
             .into_iter()
@@ -607,7 +633,7 @@ pub async fn timeline(
             bucket,
         }))
         .await?
-        .stats
+        .spotify_stats
         .timeline;
 
     let max = points
@@ -640,7 +666,7 @@ pub async fn heatmap(client: &Client, filter: &FilterArgs) -> anyhow::Result<()>
             filter: filter.resolve(client).await?,
         }))
         .await?
-        .stats
+        .spotify_stats
         .heatmap;
 
     let mut grid = [[0i32; 24]; 7];
@@ -682,7 +708,7 @@ pub async fn search(client: &Client, query: &str, limit: i32) -> anyhow::Result<
             first: limit,
         }))
         .await?
-        .search;
+        .spotify_search;
 
     if !search.artists.edges.is_empty() {
         println!("Artists");
@@ -710,7 +736,7 @@ pub async fn track(client: &Client, query: &str, filter: &FilterArgs) -> anyhow:
                 first: 1,
             }))
             .await?
-            .search
+            .spotify_search
             .items
             .edges
             .into_iter()
@@ -726,7 +752,7 @@ pub async fn track(client: &Client, query: &str, filter: &FilterArgs) -> anyhow:
             first: 10,
         }))
         .await?
-        .item
+        .spotify_item
     else {
         bail!("no item {uri}");
     };
@@ -798,7 +824,7 @@ pub async fn artist(
             first: limit,
         }))
         .await?
-        .artist
+        .spotify_artist
     else {
         bail!("no artist named {name:?}, try `spotify search {name}`");
     };

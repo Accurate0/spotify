@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<7f6ff6b12e3e7c5d7086e2da14d16026>>
+ * @generated SignedSource<<a0c8a85634b86f6875ba66d8a8f6d5c5>>
  * @lightSyntaxTransform
  */
 
@@ -9,20 +9,20 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
-export type ItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
-export type RankBy = "MINUTES_PLAYED" | "PLAYS" | "%future added value";
-export type StatsFilter = {
+export type SpotifyItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
+export type SpotifyRankBy = "MINUTES_PLAYED" | "PLAYS" | "%future added value";
+export type SpotifyStatsFilter = {
   accounts?: ReadonlyArray<string>;
   from?: string | null | undefined;
-  kinds?: ReadonlyArray<ItemKind>;
+  kinds?: ReadonlyArray<SpotifyItemKind>;
   minMsPlayed?: number;
   timeZone?: string;
   to?: string | null | undefined;
 };
 export type TopPageAlbumsPaginationQuery$variables = {
   after?: string | null | undefined;
-  by: RankBy;
-  filter: StatsFilter;
+  by: SpotifyRankBy;
+  filter: SpotifyStatsFilter;
   first?: number | null | undefined;
 };
 export type TopPageAlbumsPaginationQuery$data = {
@@ -120,15 +120,15 @@ return {
         "args": [
           (v3/*:: as any*/)
         ],
-        "concreteType": "Stats",
+        "concreteType": "SpotifyStats",
         "kind": "LinkedField",
-        "name": "stats",
+        "name": "spotifyStats",
         "plural": false,
         "selections": [
           {
             "alias": null,
             "args": (v5/*:: as any*/),
-            "concreteType": "RankedAlbumConnection",
+            "concreteType": "SpotifyAlbumRankedConnection",
             "kind": "LinkedField",
             "name": "topAlbums",
             "plural": false,
@@ -136,7 +136,7 @@ return {
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "RankedAlbumEdge",
+                "concreteType": "SpotifyAlbumRankedEdge",
                 "kind": "LinkedField",
                 "name": "edges",
                 "plural": true,
@@ -165,7 +165,7 @@ return {
                   {
                     "alias": null,
                     "args": null,
-                    "concreteType": "Album",
+                    "concreteType": "SpotifyAlbum",
                     "kind": "LinkedField",
                     "name": "node",
                     "plural": false,
@@ -181,7 +181,7 @@ return {
                       {
                         "alias": null,
                         "args": null,
-                        "concreteType": "Artist",
+                        "concreteType": "SpotifyArtist",
                         "kind": "LinkedField",
                         "name": "artist",
                         "plural": false,
@@ -262,16 +262,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "b5397e768e1e9246c3a43219d7e98e96",
+    "cacheID": "66b0020c5bcaef452a879aede615073e",
     "id": null,
     "metadata": {},
     "name": "TopPageAlbumsPaginationQuery",
     "operationKind": "query",
-    "text": "query TopPageAlbumsPaginationQuery(\n  $after: String\n  $by: RankBy!\n  $filter: StatsFilter!\n  $first: Int = 50\n) {\n  ...TopPageAlbums_query_19NMb\n}\n\nfragment TopPageAlbums_query_19NMb on Query {\n  stats(filter: $filter) {\n    topAlbums(first: $first, after: $after, by: $by) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          name\n          artworkUrl\n          artist {\n            name\n            id\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
+    "text": "query TopPageAlbumsPaginationQuery(\n  $after: String\n  $by: SpotifyRankBy!\n  $filter: SpotifyStatsFilter!\n  $first: Int = 50\n) {\n  ...TopPageAlbums_query_19NMb\n}\n\nfragment TopPageAlbums_query_19NMb on Query {\n  spotifyStats(filter: $filter) {\n    topAlbums(first: $first, after: $after, by: $by) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          name\n          artworkUrl\n          artist {\n            name\n            id\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "13924e27129981118d26a3209b44c1d7";
+(node as any).hash = "cd17d435d0ffd46c845a1ecca5582e6d";
 
 export default node;

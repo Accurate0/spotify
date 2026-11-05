@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<70c8b58b18dda3d00dfc68a2a153e3aa>>
+ * @generated SignedSource<<03861e2a4bd037510f200befe1ac2696>>
  * @lightSyntaxTransform
  */
 
@@ -58,10 +58,10 @@ const node: ReaderFragment = {
       "storageKey": null
     }
   ],
-  "type": "HeatmapCell",
+  "type": "SpotifyHeatmapCell",
   "abstractKey": null
 };
 
-(node as any).hash = "9f11fec855e6fa45dae94ebb374cef36";
+(node as any).hash = "dfbe74023302d950ea279bea2b1896ad";
 
 export default node;

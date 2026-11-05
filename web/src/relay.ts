@@ -7,9 +7,9 @@ import {
 } from "relay-runtime";
 import { AUTH_DISABLED, getAccessToken, signInAgain } from "./auth";
 
-// Same-origin: in production the SPA and API share a host (the route sends /v1/graphql to the
-// API); in dev Vite proxies /v1/graphql to the local backend.
-const ENDPOINT = "/v1/graphql";
+// Production goes through the graph router, which serves Relay's `node` across services; in dev
+// Vite proxies /v1/graphql to the local backend.
+const ENDPOINT = import.meta.env.DEV ? "/v1/graphql" : "https://graph.ortzi.cloud/v1/graphql";
 
 const fetchFn: FetchFunction = async (request, variables) => {
   const token = getAccessToken();

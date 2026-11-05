@@ -30,7 +30,7 @@ async fn status(request: Request<Body>) -> StatusCode {
 async fn graphql_requires_a_token() {
     let request = Request::post("/v1/graphql")
         .header("content-type", "application/json")
-        .body(Body::from(r#"{"query":"{ accounts { slug } }"}"#))
+        .body(Body::from(r#"{"query":"{ spotifyAccounts { slug } }"}"#))
         .unwrap();
     assert_eq!(status(request).await, StatusCode::UNAUTHORIZED);
 }

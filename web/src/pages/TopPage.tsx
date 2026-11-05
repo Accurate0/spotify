@@ -53,7 +53,7 @@ function TopArtists({ by }: { by: RankBy }) {
   const { filter } = useFilter();
   const query = useLazyLoadQuery<TopPageArtistsQuery>(
     graphql`
-      query TopPageArtistsQuery($filter: StatsFilter!, $by: RankBy!) {
+      query TopPageArtistsQuery($filter: SpotifyStatsFilter!, $by: SpotifyRankBy!) {
         ...TopPageArtists_query @arguments(filter: $filter, by: $by)
       }
     `,
@@ -64,12 +64,12 @@ function TopArtists({ by }: { by: RankBy }) {
       fragment TopPageArtists_query on Query
       @refetchable(queryName: "TopPageArtistsPaginationQuery")
       @argumentDefinitions(
-        filter: { type: "StatsFilter!" }
-        by: { type: "RankBy!" }
+        filter: { type: "SpotifyStatsFilter!" }
+        by: { type: "SpotifyRankBy!" }
         first: { type: "Int", defaultValue: 50 }
         after: { type: "String" }
       ) {
-        stats(filter: $filter) {
+        spotifyStats(filter: $filter) {
           topArtists(first: $first, after: $after, by: $by)
             @connection(key: "TopPageArtists_topArtists") {
             edges {
@@ -88,7 +88,7 @@ function TopArtists({ by }: { by: RankBy }) {
     `,
     query as TopPageArtists_query$key,
   );
-  const edges = data.stats.topArtists.edges;
+  const edges = data.spotifyStats.topArtists.edges;
   const max = by === "PLAYS" ? (edges[0]?.plays ?? 0) : (edges[0]?.minutesPlayed ?? 0);
 
   return (
@@ -113,7 +113,7 @@ function TopTracks({ by }: { by: RankBy }) {
   const { filter } = useFilter();
   const query = useLazyLoadQuery<TopPageTracksQuery>(
     graphql`
-      query TopPageTracksQuery($filter: StatsFilter!, $by: RankBy!) {
+      query TopPageTracksQuery($filter: SpotifyStatsFilter!, $by: SpotifyRankBy!) {
         ...TopPageTracks_query @arguments(filter: $filter, by: $by)
       }
     `,
@@ -124,12 +124,12 @@ function TopTracks({ by }: { by: RankBy }) {
       fragment TopPageTracks_query on Query
       @refetchable(queryName: "TopPageTracksPaginationQuery")
       @argumentDefinitions(
-        filter: { type: "StatsFilter!" }
-        by: { type: "RankBy!" }
+        filter: { type: "SpotifyStatsFilter!" }
+        by: { type: "SpotifyRankBy!" }
         first: { type: "Int", defaultValue: 50 }
         after: { type: "String" }
       ) {
-        stats(filter: $filter) {
+        spotifyStats(filter: $filter) {
           topItems(first: $first, after: $after, by: $by)
             @connection(key: "TopPageTracks_topItems") {
             edges {
@@ -150,7 +150,7 @@ function TopTracks({ by }: { by: RankBy }) {
     `,
     query as TopPageTracks_query$key,
   );
-  const edges = data.stats.topItems.edges;
+  const edges = data.spotifyStats.topItems.edges;
   const max = by === "PLAYS" ? (edges[0]?.plays ?? 0) : (edges[0]?.minutesPlayed ?? 0);
 
   return (
@@ -180,7 +180,7 @@ function TopAlbums({ by }: { by: RankBy }) {
   const { filter } = useFilter();
   const query = useLazyLoadQuery<TopPageAlbumsQuery>(
     graphql`
-      query TopPageAlbumsQuery($filter: StatsFilter!, $by: RankBy!) {
+      query TopPageAlbumsQuery($filter: SpotifyStatsFilter!, $by: SpotifyRankBy!) {
         ...TopPageAlbums_query @arguments(filter: $filter, by: $by)
       }
     `,
@@ -191,12 +191,12 @@ function TopAlbums({ by }: { by: RankBy }) {
       fragment TopPageAlbums_query on Query
       @refetchable(queryName: "TopPageAlbumsPaginationQuery")
       @argumentDefinitions(
-        filter: { type: "StatsFilter!" }
-        by: { type: "RankBy!" }
+        filter: { type: "SpotifyStatsFilter!" }
+        by: { type: "SpotifyRankBy!" }
         first: { type: "Int", defaultValue: 50 }
         after: { type: "String" }
       ) {
-        stats(filter: $filter) {
+        spotifyStats(filter: $filter) {
           topAlbums(first: $first, after: $after, by: $by)
             @connection(key: "TopPageAlbums_topAlbums") {
             edges {
@@ -217,7 +217,7 @@ function TopAlbums({ by }: { by: RankBy }) {
     `,
     query as TopPageAlbums_query$key,
   );
-  const edges = data.stats.topAlbums.edges;
+  const edges = data.spotifyStats.topAlbums.edges;
   const max = by === "PLAYS" ? (edges[0]?.plays ?? 0) : (edges[0]?.minutesPlayed ?? 0);
 
   return (

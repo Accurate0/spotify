@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<7e5b61a5b0488c211f9a7433531de5db>>
+ * @generated SignedSource<<4f7d3766b60e04eef70129368630a59d>>
  * @lightSyntaxTransform
  */
 
@@ -9,22 +9,22 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
-export type ItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
-export type TimeBucket = "DAY" | "MONTH" | "WEEK" | "YEAR" | "%future added value";
-export type StatsFilter = {
+export type SpotifyItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
+export type SpotifyTimeBucket = "DAY" | "MONTH" | "WEEK" | "YEAR" | "%future added value";
+export type SpotifyStatsFilter = {
   accounts?: ReadonlyArray<string>;
   from?: string | null | undefined;
-  kinds?: ReadonlyArray<ItemKind>;
+  kinds?: ReadonlyArray<SpotifyItemKind>;
   minMsPlayed?: number;
   timeZone?: string;
   to?: string | null | undefined;
 };
 export type OverviewPageQuery$variables = {
-  bucket: TimeBucket;
-  filter: StatsFilter;
+  bucket: SpotifyTimeBucket;
+  filter: SpotifyStatsFilter;
 };
 export type OverviewPageQuery$data = {
-  readonly stats: {
+  readonly spotifyStats: {
     readonly heatmap: ReadonlyArray<{
       readonly " $fragmentSpreads": FragmentRefs<"Heatmap_cells">;
     }>;
@@ -137,7 +137,7 @@ v9 = {
 v10 = {
   "alias": null,
   "args": (v4/*:: as any*/),
-  "concreteType": "RankedArtistConnection",
+  "concreteType": "SpotifyArtistRankedConnection",
   "kind": "LinkedField",
   "name": "topArtists",
   "plural": false,
@@ -145,7 +145,7 @@ v10 = {
     {
       "alias": null,
       "args": null,
-      "concreteType": "RankedArtistEdge",
+      "concreteType": "SpotifyArtistRankedEdge",
       "kind": "LinkedField",
       "name": "edges",
       "plural": true,
@@ -156,7 +156,7 @@ v10 = {
         {
           "alias": null,
           "args": null,
-          "concreteType": "Artist",
+          "concreteType": "SpotifyArtist",
           "kind": "LinkedField",
           "name": "node",
           "plural": false,
@@ -182,7 +182,7 @@ v10 = {
 v11 = {
   "alias": null,
   "args": (v4/*:: as any*/),
-  "concreteType": "RankedItemConnection",
+  "concreteType": "SpotifyItemRankedConnection",
   "kind": "LinkedField",
   "name": "topItems",
   "plural": false,
@@ -190,7 +190,7 @@ v11 = {
     {
       "alias": null,
       "args": null,
-      "concreteType": "RankedItemEdge",
+      "concreteType": "SpotifyItemRankedEdge",
       "kind": "LinkedField",
       "name": "edges",
       "plural": true,
@@ -201,7 +201,7 @@ v11 = {
         {
           "alias": null,
           "args": null,
-          "concreteType": "Item",
+          "concreteType": "SpotifyItem",
           "kind": "LinkedField",
           "name": "node",
           "plural": false,
@@ -251,15 +251,15 @@ return {
       {
         "alias": null,
         "args": (v2/*:: as any*/),
-        "concreteType": "Stats",
+        "concreteType": "SpotifyStats",
         "kind": "LinkedField",
-        "name": "stats",
+        "name": "spotifyStats",
         "plural": false,
         "selections": [
           {
             "alias": null,
             "args": null,
-            "concreteType": "Summary",
+            "concreteType": "SpotifySummary",
             "kind": "LinkedField",
             "name": "summary",
             "plural": false,
@@ -275,7 +275,7 @@ return {
           {
             "alias": null,
             "args": (v3/*:: as any*/),
-            "concreteType": "TimelinePoint",
+            "concreteType": "SpotifyTimelinePoint",
             "kind": "LinkedField",
             "name": "timeline",
             "plural": true,
@@ -291,7 +291,7 @@ return {
           {
             "alias": null,
             "args": null,
-            "concreteType": "HeatmapCell",
+            "concreteType": "SpotifyHeatmapCell",
             "kind": "LinkedField",
             "name": "heatmap",
             "plural": true,
@@ -325,15 +325,15 @@ return {
       {
         "alias": null,
         "args": (v2/*:: as any*/),
-        "concreteType": "Stats",
+        "concreteType": "SpotifyStats",
         "kind": "LinkedField",
-        "name": "stats",
+        "name": "spotifyStats",
         "plural": false,
         "selections": [
           {
             "alias": null,
             "args": null,
-            "concreteType": "Summary",
+            "concreteType": "SpotifySummary",
             "kind": "LinkedField",
             "name": "summary",
             "plural": false,
@@ -381,7 +381,7 @@ return {
           {
             "alias": null,
             "args": (v3/*:: as any*/),
-            "concreteType": "TimelinePoint",
+            "concreteType": "SpotifyTimelinePoint",
             "kind": "LinkedField",
             "name": "timeline",
             "plural": true,
@@ -401,7 +401,7 @@ return {
           {
             "alias": null,
             "args": null,
-            "concreteType": "HeatmapCell",
+            "concreteType": "SpotifyHeatmapCell",
             "kind": "LinkedField",
             "name": "heatmap",
             "plural": true,
@@ -433,16 +433,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "f8bbe8a2267af063dd654906f899adba",
+    "cacheID": "fa4488c1a74f0d114b4b221ef22a82f2",
     "id": null,
     "metadata": {},
     "name": "OverviewPageQuery",
     "operationKind": "query",
-    "text": "query OverviewPageQuery(\n  $filter: StatsFilter!\n  $bucket: TimeBucket!\n) {\n  stats(filter: $filter) {\n    summary {\n      ...StatTiles_summary\n    }\n    timeline(bucket: $bucket) {\n      ...TimelineChart_points\n    }\n    heatmap {\n      ...Heatmap_cells\n    }\n    topArtists(first: 5) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          name\n          imageUrl\n        }\n      }\n    }\n    topItems(first: 5) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          uri\n          name\n          artistName\n          artworkUrl\n        }\n      }\n    }\n  }\n}\n\nfragment Heatmap_cells on HeatmapCell {\n  dayOfWeek\n  hour\n  plays\n  minutesPlayed\n}\n\nfragment StatTiles_summary on Summary {\n  plays\n  minutesPlayed\n  distinctTracks\n  distinctArtists\n  skipRate\n  firstPlayed\n  lastPlayed\n}\n\nfragment TimelineChart_points on TimelinePoint {\n  start\n  plays\n  minutesPlayed\n}\n"
+    "text": "query OverviewPageQuery(\n  $filter: SpotifyStatsFilter!\n  $bucket: SpotifyTimeBucket!\n) {\n  spotifyStats(filter: $filter) {\n    summary {\n      ...StatTiles_summary\n    }\n    timeline(bucket: $bucket) {\n      ...TimelineChart_points\n    }\n    heatmap {\n      ...Heatmap_cells\n    }\n    topArtists(first: 5) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          name\n          imageUrl\n        }\n      }\n    }\n    topItems(first: 5) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          uri\n          name\n          artistName\n          artworkUrl\n        }\n      }\n    }\n  }\n}\n\nfragment Heatmap_cells on SpotifyHeatmapCell {\n  dayOfWeek\n  hour\n  plays\n  minutesPlayed\n}\n\nfragment StatTiles_summary on SpotifySummary {\n  plays\n  minutesPlayed\n  distinctTracks\n  distinctArtists\n  skipRate\n  firstPlayed\n  lastPlayed\n}\n\nfragment TimelineChart_points on SpotifyTimelinePoint {\n  start\n  plays\n  minutesPlayed\n}\n"
   }
 };
 })();
 
-(node as any).hash = "93a87b7ec85753d7486be8ad341fa00d";
+(node as any).hash = "eae4da61f6f241dbb40c9d1b14f3c1ee";
 
 export default node;

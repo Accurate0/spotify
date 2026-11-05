@@ -11,7 +11,7 @@ function Results({ query }: { query: string }) {
   const data = useLazyLoadQuery<SearchPageQuery>(
     graphql`
       query SearchPageQuery($query: String!) {
-        search(query: $query) {
+        spotifySearch(query: $query) {
           artists(first: 8) {
             edges {
               node {
@@ -42,7 +42,7 @@ function Results({ query }: { query: string }) {
     { query },
   );
 
-  const { artists, items } = data.search;
+  const { artists, items } = data.spotifySearch;
   if (artists.edges.length === 0 && items.edges.length === 0) {
     return <p className="text-muted-foreground text-sm">Nothing matches “{query}”.</p>;
   }

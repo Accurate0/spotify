@@ -117,10 +117,10 @@ async fn run(schema: &AppSchema, query: &str, variables: Value) -> Value {
 async fn account_id(schema: &AppSchema, slug: &str) -> Value {
     run(
         schema,
-        "query($slug: String!) { account(slug: $slug) { id } }",
+        "query($slug: String!) { spotifyAccount(slug: $slug) { id } }",
         json!({"slug": slug}),
     )
-    .await["account"]["id"]
+    .await["spotifyAccount"]["id"]
         .clone()
 }
 
@@ -132,8 +132,8 @@ async fn summary_and_rankings(pool: PgPool) {
 
     let data = run(
         schema,
-        r#"query($filter: StatsFilter!) {
-            stats(filter: $filter) {
+        r#"query($filter: SpotifyStatsFilter!) {
+            spotifyStats(filter: $filter) {
                 summary { plays minutesPlayed distinctTracks distinctArtists skipRate }
                 topArtists { edges { rank plays minutesPlayed node { name } } }
                 topItems(by: PLAYS, first: 1) {
@@ -146,7 +146,7 @@ async fn summary_and_rankings(pool: PgPool) {
         json!({"filter": {"accounts": [me]}}),
     )
     .await;
-    let stats = &data["stats"];
+    let stats = &data["spotifyStats"];
 
     // 4 music plays over 30s: the 5s skip and the episode are excluded.
     assert_eq!(
@@ -173,13 +173,13 @@ async fn summary_and_rankings(pool: PgPool) {
     let cursor = top["edges"][0]["cursor"].clone();
     let next = run(
         schema,
-        r#"query($filter: StatsFilter!, $after: String) {
-            stats(filter: $filter) { topItems(by: PLAYS, first: 1, after: $after) { edges { rank } } }
+        r#"query($filter: SpotifyStatsFilter!, $after: String) {
+            spotifyStats(filter: $filter) { topItems(by: PLAYS, first: 1, after: $after) { edges { rank } } }
         }"#,
         json!({"filter": {"accounts": [me]}, "after": cursor}),
     )
     .await;
-    assert_eq!(next["stats"]["topItems"]["edges"][0]["rank"], 2);
+    assert_eq!(next["spotifyStats"]["topItems"]["edges"][0]["rank"], 2);
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -192,10 +192,10 @@ async fn filters(pool: PgPool) {
         async move {
             run(
                 &schema,
-                "query($filter: StatsFilter!) { stats(filter: $filter) { summary { plays } } }",
+                "query($filter: SpotifyStatsFilter!) { spotifyStats(filter: $filter) { summary { plays } } }",
                 json!({"filter": filter}),
             )
-            .await["stats"]["summary"]["plays"]
+            .await["spotifyStats"]["summary"]["plays"]
                 .as_i64()
                 .unwrap()
         }
@@ -221,8 +221,8 @@ async fn timeline_and_heatmap_use_time_zone(pool: PgPool) {
     let schema = &schema;
     let me = account_id(schema, "me").await;
 
-    let query = r#"query($filter: StatsFilter!) {
-        stats(filter: $filter) {
+    let query = r#"query($filter: SpotifyStatsFilter!) {
+        spotifyStats(filter: $filter) {
             timeline(bucket: MONTH) { start plays }
             heatmap { dayOfWeek hour plays }
         }
@@ -231,14 +231,14 @@ async fn timeline_and_heatmap_use_time_zone(pool: PgPool) {
     // In Perth the first play is on 2024-01-01 (a Monday) at 01:00.
     let perth = run(schema, query, json!({"filter": {"accounts": [me]}})).await;
     assert_eq!(
-        perth["stats"]["timeline"],
+        perth["spotifyStats"]["timeline"],
         json!([
             {"start": "2023-12-31T16:00:00+00:00", "plays": 3},
             {"start": "2024-01-31T16:00:00+00:00", "plays": 1},
         ])
     );
     assert_eq!(
-        perth["stats"]["heatmap"][0],
+        perth["spotifyStats"]["heatmap"][0],
         json!({"dayOfWeek": 1, "hour": 1, "plays": 1})
     );
 
@@ -250,10 +250,10 @@ async fn timeline_and_heatmap_use_time_zone(pool: PgPool) {
     )
     .await;
     assert_eq!(
-        utc["stats"]["timeline"][0]["start"],
+        utc["spotifyStats"]["timeline"][0]["start"],
         "2023-12-01T00:00:00+00:00"
     );
-    assert_eq!(utc["stats"]["timeline"][0]["plays"], 1);
+    assert_eq!(utc["spotifyStats"]["timeline"][0]["plays"], 1);
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -264,37 +264,37 @@ async fn item_artist_and_search(pool: PgPool) {
     let data = run(
         schema,
         r#"{
-            search(query: "alp") {
+            spotifySearch(query: "alp") {
                 items { edges { node { id uri } } }
                 artists { edges { node { id name } } }
             }
-            item(uri: "spotify:track:b1") {
+            spotifyItem(uri: "spotify:track:b1") {
                 stats { summary { plays firstPlayed lastPlayed } }
                 plays: stats(filter: { minMsPlayed: 0 }) {
                     plays { edges { node { msPlayed account { slug } item { name } } } }
                 }
             }
-            artist(name: "Alpha") { stats { topItems { edges { node { name } } } } }
-            missing: artist(name: "Nobody") { name }
+            spotifyArtist(name: "Alpha") { stats { topItems { edges { node { name } } } } }
+            missing: spotifyArtist(name: "Nobody") { name }
         }"#,
         json!({}),
     )
     .await;
 
-    let items = data["search"]["items"]["edges"].as_array().unwrap();
+    let items = data["spotifySearch"]["items"]["edges"].as_array().unwrap();
     assert_eq!(items.len(), 2, "both Alpha tracks match on artist");
     assert_eq!(
-        data["search"]["artists"]["edges"][0]["node"]["name"],
+        data["spotifySearch"]["artists"]["edges"][0]["node"]["name"],
         "Alpha"
     );
 
     // Across both accounts: 2 plays over 30s.
-    let summary = &data["item"]["stats"]["summary"];
+    let summary = &data["spotifyItem"]["stats"]["summary"];
     assert_eq!(summary["plays"], 2);
     assert_eq!(summary["firstPlayed"], "2024-02-01T10:00:00+00:00");
     assert_eq!(summary["lastPlayed"], "2024-03-01T10:00:00+00:00");
 
-    let plays = &data["item"]["plays"]["plays"]["edges"];
+    let plays = &data["spotifyItem"]["plays"]["plays"]["edges"];
     assert_eq!(
         plays,
         &json!([
@@ -304,24 +304,34 @@ async fn item_artist_and_search(pool: PgPool) {
         ])
     );
 
-    let artist_tracks = &data["artist"]["stats"]["topItems"]["edges"];
+    let artist_tracks = &data["spotifyArtist"]["stats"]["topItems"]["edges"];
     assert_eq!(artist_tracks.as_array().unwrap().len(), 2);
     assert_eq!(data["missing"], Value::Null);
 
-    // Relay refetch through node(id).
+    // The graph's node field resolves ids through these entity lookups.
     let item_id = items[0]["node"]["id"].clone();
-    let artist_id = data["search"]["artists"]["edges"][0]["node"]["id"].clone();
-    let nodes = run(
+    let artist_id = data["spotifySearch"]["artists"]["edges"][0]["node"]["id"].clone();
+    assert_eq!(artist_id, "spotify:artist:Alpha");
+    let entities = run(
         schema,
-        r#"query($ids: [ID!]!) { nodes(ids: $ids) { __typename ... on Artist { name } ... on Item { uri } } }"#,
-        json!({"ids": [item_id, artist_id]}),
+        r#"query($representations: [_Any!]!) {
+            _entities(representations: $representations) {
+                __typename ... on SpotifyArtist { name } ... on SpotifyItem { uri }
+            }
+        }"#,
+        json!({"representations": [
+            {"__typename": "SpotifyItem", "id": item_id},
+            {"__typename": "SpotifyArtist", "id": artist_id},
+            {"__typename": "SpotifyArtist", "id": "spotify:item:spotify:track:b1"},
+        ]}),
     )
     .await;
     assert_eq!(
-        nodes["nodes"][1],
-        json!({"__typename": "Artist", "name": "Alpha"})
+        entities["_entities"][1],
+        json!({"__typename": "SpotifyArtist", "name": "Alpha"})
     );
-    assert_eq!(nodes["nodes"][0]["__typename"], "Item");
+    assert_eq!(entities["_entities"][0]["__typename"], "SpotifyItem");
+    assert_eq!(entities["_entities"][2], Value::Null);
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -332,8 +342,8 @@ async fn insights(pool: PgPool) {
 
     let data = run(
         schema,
-        r#"query($filter: StatsFilter!, $me: ID!) {
-            stats(filter: $filter) {
+        r#"query($filter: SpotifyStatsFilter!, $me: ID!) {
+            spotifyStats(filter: $filter) {
                 firstPlay { ts item { name } }
                 listeningDays { activeDays spanDays longestStreak { start end days } latestStreak { days } }
                 topDays(first: 1) { date minutesPlayed topArtist { name } }
@@ -343,14 +353,14 @@ async fn insights(pool: PgPool) {
                 ends: breakdown(by: END_REASON) { key label }
                 discoveries { edges { node { artist { name } firstItem { name } } } }
             }
-            all: stats(filter: { accounts: [$me], minMsPlayed: 0 }) {
+            all: spotifyStats(filter: { accounts: [$me], minMsPlayed: 0 }) {
                 mostSkipped(minPlays: 2) { item { name } skips plays }
             }
         }"#,
         json!({"filter": {"accounts": [me]}, "me": me}),
     )
     .await;
-    let stats = &data["stats"];
+    let stats = &data["spotifyStats"];
 
     assert_eq!(stats["firstPlay"]["item"]["name"], "A1");
     // Perth days: Jan 1, 2, 3 (a streak of 3) and Feb 1.
@@ -396,25 +406,25 @@ async fn discoveries_respect_first_play_and_forgotten_needs_a_year(pool: PgPool)
     // Beta was first heard on Feb 1, so a February-only range discovers Beta but not Alpha.
     let feb = run(
         schema,
-        r#"query($filter: StatsFilter!) {
-            stats(filter: $filter) { discoveries { edges { node { artist { name } } } } }
+        r#"query($filter: SpotifyStatsFilter!) {
+            spotifyStats(filter: $filter) { discoveries { edges { node { artist { name } } } } }
         }"#,
         json!({"filter": {"accounts": [me], "from": "2024-01-31T16:00:00Z", "to": "2024-02-29T16:00:00Z"}}),
     )
     .await;
     assert_eq!(
-        feb["stats"]["discoveries"]["edges"],
+        feb["spotifyStats"]["discoveries"]["edges"],
         json!([{"node": {"artist": {"name": "Beta"}}}])
     );
 
     // All plays fall within two months, so nothing is "forgotten".
     let forgotten = run(
         schema,
-        r#"{ stats { forgottenArtists { edges { node { artist { name } } } } } }"#,
+        r#"{ spotifyStats { forgottenArtists { edges { node { artist { name } } } } } }"#,
         json!({}),
     )
     .await;
-    assert_eq!(forgotten["stats"]["forgottenArtists"]["edges"], json!([]));
+    assert_eq!(forgotten["spotifyStats"]["forgottenArtists"]["edges"], json!([]));
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -427,8 +437,8 @@ async fn artist_skip_rate_leaderboard(pool: PgPool) {
     // counts because skip rates ignore the minimum play length.
     let data = run(
         schema,
-        r#"query($filter: StatsFilter!) {
-            stats(filter: $filter) {
+        r#"query($filter: SpotifyStatsFilter!) {
+            spotifyStats(filter: $filter) {
                 most: artistSkipRates(minPlays: 2) { rank artist { name } skips plays }
                 least: artistSkipRates(order: LEAST_SKIPPED, minPlays: 2) { artist { name } }
                 busy: artistSkipRates(minPlays: 3) { artist { name } }
@@ -437,7 +447,7 @@ async fn artist_skip_rate_leaderboard(pool: PgPool) {
         json!({"filter": {"accounts": [me]}}),
     )
     .await;
-    let stats = &data["stats"];
+    let stats = &data["spotifyStats"];
 
     assert_eq!(
         stats["most"],
@@ -507,8 +517,8 @@ async fn enriched_stats(pool: PgPool) {
 
     let data = run(
         schema,
-        r#"query($filter: StatsFilter!) {
-            stats(filter: $filter) {
+        r#"query($filter: SpotifyStatsFilter!) {
+            spotifyStats(filter: $filter) {
                 topGenres { edges { rank minutesPlayed node { name } } }
                 decades: breakdown(by: DECADE) { key label minutesPlayed }
                 musicAge { averageYears newShare coverage oldestYear oldest { name } }
@@ -517,19 +527,19 @@ async fn enriched_stats(pool: PgPool) {
                 topAlbums(first: 1) { edges { node { name artworkUrl releaseYear } } }
                 genreTimeline(bucket: YEAR) { genre points { minutesPlayed } }
             }
-            item(uri: "spotify:track:a2") {
+            spotifyItem(uri: "spotify:track:a2") {
                 artworkUrl durationMs explicit releaseYear releaseDate enriched
                 artists { name }
                 album { artworkUrl releaseYear }
             }
-            bare: item(uri: "spotify:episode:e") { enriched artworkUrl artists { name } }
-            artist(name: "Alpha") { genres imageUrl }
-            enrichment { tracksEnriched tracksPending artistsEnriched artistsPending artworkStored }
+            bare: spotifyItem(uri: "spotify:episode:e") { enriched artworkUrl artists { name } }
+            spotifyArtist(name: "Alpha") { genres imageUrl }
+            spotifyEnrichment { tracksEnriched tracksPending artistsEnriched artistsPending artworkStored }
         }"#,
         json!({"filter": {"accounts": [me]}}),
     )
     .await;
-    let stats = &data["stats"];
+    let stats = &data["spotifyStats"];
 
     // Streams over 30s: a1 3m + 3m and a2 2m (Alpha: indie, pop), b1 4m (Beta: rock).
     assert_eq!(
@@ -575,7 +585,7 @@ async fn enriched_stats(pool: PgPool) {
     assert_eq!(timeline[0]["genre"], "indie");
 
     assert_eq!(
-        data["item"],
+        data["spotifyItem"],
         json!({
             "artworkUrl": "/art/albums/al_a", "durationMs": 240000, "explicit": true,
             "releaseYear": 1999, "releaseDate": "1999-03-14", "enriched": true,
@@ -588,12 +598,12 @@ async fn enriched_stats(pool: PgPool) {
         json!({"enriched": false, "artworkUrl": null, "artists": []})
     );
     assert_eq!(
-        data["artist"],
+        data["spotifyArtist"],
         json!({"genres": ["indie", "pop"], "imageUrl": "/art/artists/ar_alpha"})
     );
     // The episode is the only item left; every credited artist is fetched.
     assert_eq!(
-        data["enrichment"],
+        data["spotifyEnrichment"],
         json!({"tracksEnriched": 3, "tracksPending": 1, "artistsEnriched": 3, "artistsPending": 0, "artworkStored": 2})
     );
 }

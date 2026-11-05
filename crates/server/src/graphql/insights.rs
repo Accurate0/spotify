@@ -14,6 +14,7 @@ use super::page::{Page, PlainConnection, RankedConnection};
 use super::stats::{Play, Scope};
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifyStreak")]
 pub struct Streak {
     pub start: NaiveDate,
     pub end: NaiveDate,
@@ -21,6 +22,7 @@ pub struct Streak {
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifyListeningDays")]
 pub struct ListeningDays {
     /// Days with at least one play.
     pub active_days: i32,
@@ -33,6 +35,7 @@ pub struct ListeningDays {
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifyDayStat")]
 pub struct DayStat {
     pub date: NaiveDate,
     pub plays: i32,
@@ -42,6 +45,7 @@ pub struct DayStat {
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifyRepeatDay")]
 pub struct RepeatDay {
     pub item: Item,
     /// The day this item was played most.
@@ -50,6 +54,7 @@ pub struct RepeatDay {
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifySkippedItem")]
 pub struct SkippedItem {
     pub item: Item,
     /// Plays where the export records whether it was skipped.
@@ -59,6 +64,7 @@ pub struct SkippedItem {
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifyArtistSkipRate")]
 pub struct ArtistSkipRate {
     pub artist: Artist,
     /// Plays where the export records whether it was skipped.
@@ -70,6 +76,7 @@ pub struct ArtistSkipRate {
 }
 
 #[derive(Enum, Clone, Copy, PartialEq, Eq, Default)]
+#[graphql(name = "SpotifySkipOrder")]
 pub enum SkipOrder {
     /// Highest skip rate first.
     #[default]
@@ -79,6 +86,7 @@ pub enum SkipOrder {
 }
 
 #[derive(Enum, Clone, Copy, PartialEq, Eq)]
+#[graphql(name = "SpotifyBreakdownDimension")]
 pub enum BreakdownDimension {
     /// Device family: Android, iOS, macOS, Windows, Linux, Web player, Other.
     Device,
@@ -109,6 +117,7 @@ impl BreakdownDimension {
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifyBreakdownRow")]
 pub struct BreakdownRow {
     /// Raw value, e.g. `fwdbtn` or `AU`; null when the export doesn't record it.
     pub key: Option<String>,
@@ -142,6 +151,7 @@ fn reason_label(code: &str) -> String {
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifySession")]
 pub struct Session {
     pub start: DateTime<Utc>,
     pub end: DateTime<Utc>,
@@ -150,6 +160,7 @@ pub struct Session {
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifySessions")]
 pub struct Sessions {
     /// Listening sessions: plays separated by less than 30 minutes of silence.
     pub count: i32,
@@ -165,7 +176,7 @@ pub struct Discovery {
     minutes_played: i32,
 }
 
-#[Object]
+#[Object(name = "SpotifyDiscovery")]
 impl Discovery {
     async fn artist(&self) -> Artist {
         Artist {
@@ -200,6 +211,7 @@ impl Discovery {
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifyForgottenArtist")]
 pub struct ForgottenArtist {
     pub artist: Artist,
     pub plays: i32,
@@ -620,6 +632,7 @@ pub async fn forgotten_artists(
 }
 
 #[derive(SimpleObject, Clone)]
+#[graphql(name = "SpotifyGenre")]
 pub struct Genre {
     pub name: String,
 }
@@ -656,12 +669,14 @@ pub async fn top_genres(
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifyGenrePoint")]
 pub struct GenrePoint {
     pub start: DateTime<Utc>,
     pub minutes_played: i32,
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifyGenreSeries")]
 pub struct GenreSeries {
     pub genre: String,
     pub points: Vec<GenrePoint>,
@@ -732,6 +747,7 @@ pub async fn genre_timeline(
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifyMusicAge")]
 pub struct MusicAge {
     /// Average years between a track's release and when you played it.
     pub average_years: Option<f64>,
@@ -786,6 +802,7 @@ pub async fn music_age(pool: &PgPool, scope: &Scope) -> sqlx::Result<MusicAge> {
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifyCompletion")]
 pub struct Completion {
     /// Average share of each track played, capped at 100%.
     pub average: Option<f64>,
@@ -819,6 +836,7 @@ pub async fn completion(pool: &PgPool, scope: &Scope) -> sqlx::Result<Completion
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifyAbandonedItem")]
 pub struct AbandonedItem {
     pub item: Item,
     pub plays: i32,
@@ -861,6 +879,7 @@ pub async fn most_abandoned(
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifyEnrichment")]
 pub struct Enrichment {
     pub tracks_enriched: i32,
     pub tracks_pending: i32,

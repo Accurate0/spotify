@@ -74,7 +74,7 @@ pub async fn run(client: &Client, account: &str, path: &Path, dry_run: bool) -> 
             slug: account.to_owned(),
         }))
         .await?;
-    if found.account.is_none() {
+    if found.spotify_account.is_none() {
         bail!(
             "account {account:?} does not exist, create it with `spotify accounts add {account}`"
         );
@@ -112,7 +112,7 @@ pub async fn run(client: &Client, account: &str, path: &Path, dry_run: bool) -> 
                     sha256: sha256.clone(),
                 }))
                 .await?
-                .file_exists
+                .spotify_file_exists
             {
                 Plan::AlreadyImported
             } else {
@@ -158,7 +158,7 @@ pub async fn run(client: &Client, account: &str, path: &Path, dry_run: bool) -> 
                 },
             }))
             .await?
-            .create_export
+            .spotify_create_export
             .export;
 
         let progress = ProgressBar::new(uploads as u64).with_style(
@@ -187,7 +187,7 @@ pub async fn run(client: &Client, account: &str, path: &Path, dry_run: bool) -> 
                 )
                 .await
                 .with_context(|| format!("uploading {label}/{name}"))?
-                .upload_export_file;
+                .spotify_upload_export_file;
 
             match (result.status, result.file) {
                 (UploadStatus::Imported, Some(file)) => {

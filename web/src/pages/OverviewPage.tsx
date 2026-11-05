@@ -23,8 +23,8 @@ export default function OverviewPage() {
 
   const data = useLazyLoadQuery<OverviewPageQuery>(
     graphql`
-      query OverviewPageQuery($filter: StatsFilter!, $bucket: TimeBucket!) {
-        stats(filter: $filter) {
+      query OverviewPageQuery($filter: SpotifyStatsFilter!, $bucket: SpotifyTimeBucket!) {
+        spotifyStats(filter: $filter) {
           summary {
             ...StatTiles_summary
           }
@@ -66,7 +66,7 @@ export default function OverviewPage() {
     { filter, bucket },
   );
 
-  const { stats } = data;
+  const { spotifyStats: stats } = data;
   const maxArtist = stats.topArtists.edges[0]?.minutesPlayed ?? 0;
   const maxItem = stats.topItems.edges[0]?.minutesPlayed ?? 0;
 

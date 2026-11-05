@@ -19,7 +19,7 @@ function hourLabel(hour: number): string {
 export default function Heatmap({ cells }: { cells: Heatmap_cells$key }) {
   const data = useFragment(
     graphql`
-      fragment Heatmap_cells on HeatmapCell @relay(plural: true) {
+      fragment Heatmap_cells on SpotifyHeatmapCell @relay(plural: true) {
         dayOfWeek
         hour
         plays

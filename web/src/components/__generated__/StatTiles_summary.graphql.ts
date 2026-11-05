@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<fde759e7864b3c436017edab57b30f68>>
+ * @generated SignedSource<<7d89ca8023f0717021295199042a7c63>>
  * @lightSyntaxTransform
  */
 
@@ -80,10 +80,10 @@ const node: ReaderFragment = {
       "storageKey": null
     }
   ],
-  "type": "Summary",
+  "type": "SpotifySummary",
   "abstractKey": null
 };
 
-(node as any).hash = "6e82b7df5901cef0bc6e04881701e8c3";
+(node as any).hash = "66ab38e3646b4b0089475fb1b57b97b0";
 
 export default node;

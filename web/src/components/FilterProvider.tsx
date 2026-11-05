@@ -35,12 +35,12 @@ export default function FilterProvider({ children }: { children: ReactNode }) {
   const data = useLazyLoadQuery<FilterProviderAccountsQuery>(
     graphql`
       query FilterProviderAccountsQuery {
-        accounts {
+        spotifyAccounts {
           id
           slug
           displayName
         }
-        stats(filter: { kinds: [TRACK, EPISODE, AUDIOBOOK], minMsPlayed: 0 }) {
+        spotifyStats(filter: { kinds: [TRACK, EPISODE, AUDIOBOOK], minMsPlayed: 0 }) {
           summary {
             firstPlayed
             lastPlayed
@@ -81,7 +81,7 @@ export default function FilterProvider({ children }: { children: ReactNode }) {
       );
     };
 
-    const { firstPlayed, lastPlayed } = data.stats.summary;
+    const { firstPlayed, lastPlayed } = data.spotifyStats.summary;
     const years: number[] = [];
     if (firstPlayed && lastPlayed) {
       for (let y = new Date(lastPlayed).getFullYear(); y >= new Date(firstPlayed).getFullYear(); y--) {
@@ -89,13 +89,13 @@ export default function FilterProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    const account = data.accounts.find((a) => a.slug === state.account);
+    const account = data.spotifyAccounts.find((a) => a.slug === state.account);
     const { from, to } = rangeBounds(state.range, lastPlayed ? new Date(lastPlayed) : new Date());
 
     return {
       state,
       setState,
-      accounts: data.accounts,
+      accounts: data.spotifyAccounts,
       years,
       filter: {
         accounts: account ? [account.id] : [],

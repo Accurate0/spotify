@@ -12,6 +12,7 @@ use crate::import::{self, FileUpload, ImportOutcome};
 pub struct MutationRoot;
 
 #[derive(InputObject)]
+#[graphql(name = "SpotifyCreateAccountInput")]
 pub struct CreateAccountInput {
     /// Lowercase identifier used by the CLI, e.g. `me`.
     pub slug: String,
@@ -19,11 +20,13 @@ pub struct CreateAccountInput {
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifyCreateAccountPayload")]
 pub struct CreateAccountPayload {
     pub account: Account,
 }
 
 #[derive(InputObject)]
+#[graphql(name = "SpotifyCreateExportInput")]
 pub struct CreateExportInput {
     /// Account slug.
     pub account: String,
@@ -34,11 +37,13 @@ pub struct CreateExportInput {
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifyCreateExportPayload")]
 pub struct CreateExportPayload {
     pub export: Export,
 }
 
 #[derive(InputObject)]
+#[graphql(name = "SpotifyUploadExportFileInput")]
 pub struct UploadExportFileInput {
     pub export_id: ID,
     /// The file's name inside the export, used to detect its kind.
@@ -48,6 +53,7 @@ pub struct UploadExportFileInput {
 }
 
 #[derive(Enum, Clone, Copy, PartialEq, Eq)]
+#[graphql(name = "SpotifyUploadStatus")]
 pub enum UploadStatus {
     Imported,
     /// Already imported for this account; nothing was changed.
@@ -57,24 +63,27 @@ pub enum UploadStatus {
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifyUploadExportFilePayload")]
 pub struct UploadExportFilePayload {
     pub status: UploadStatus,
     pub file: Option<ExportFile>,
 }
 
 #[derive(InputObject)]
+#[graphql(name = "SpotifyFinalizeExportInput")]
 pub struct FinalizeExportInput {
     pub export_id: ID,
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "SpotifyFinalizeExportPayload")]
 pub struct FinalizeExportPayload {
     pub export: Export,
 }
 
 #[Object(name = "Mutation")]
 impl MutationRoot {
-    pub(super) async fn create_account(
+    async fn spotify_create_account(
         &self,
         ctx: &Context<'_>,
         input: CreateAccountInput,
@@ -100,7 +109,7 @@ impl MutationRoot {
     }
 
     #[graphql(inaccessible)]
-    pub(super) async fn create_export(
+    async fn spotify_create_export(
         &self,
         ctx: &Context<'_>,
         input: CreateExportInput,
@@ -116,7 +125,7 @@ impl MutationRoot {
     }
 
     #[graphql(inaccessible)]
-    pub(super) async fn upload_export_file(
+    async fn spotify_upload_export_file(
         &self,
         ctx: &Context<'_>,
         input: UploadExportFileInput,
@@ -175,7 +184,7 @@ impl MutationRoot {
     }
 
     #[graphql(inaccessible)]
-    pub(super) async fn finalize_export(
+    async fn spotify_finalize_export(
         &self,
         ctx: &Context<'_>,
         input: FinalizeExportInput,

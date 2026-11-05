@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<3eda61c2327b3da1e1d5cf1af584af09>>
+ * @generated SignedSource<<d94ea5202a2cadbb789c3f78de875c83>>
  * @lightSyntaxTransform
  */
 
@@ -50,10 +50,10 @@ const node: ReaderFragment = {
       "storageKey": null
     }
   ],
-  "type": "TimelinePoint",
+  "type": "SpotifyTimelinePoint",
   "abstractKey": null
 };
 
-(node as any).hash = "c43fe2744470bba58166896d9f26b7aa";
+(node as any).hash = "fe0513065bfb1e34ca8400baf9591811";
 
 export default node;

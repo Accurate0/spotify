@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<935e87e156f7ebc42727ad4b89b6942a>>
+ * @generated SignedSource<<c9fd2fd8e3a1e919be2ef629dfc55e45>>
  * @lightSyntaxTransform
  */
 
@@ -9,20 +9,20 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
-export type ItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
-export type RankBy = "MINUTES_PLAYED" | "PLAYS" | "%future added value";
-export type StatsFilter = {
+export type SpotifyItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
+export type SpotifyRankBy = "MINUTES_PLAYED" | "PLAYS" | "%future added value";
+export type SpotifyStatsFilter = {
   accounts?: ReadonlyArray<string>;
   from?: string | null | undefined;
-  kinds?: ReadonlyArray<ItemKind>;
+  kinds?: ReadonlyArray<SpotifyItemKind>;
   minMsPlayed?: number;
   timeZone?: string;
   to?: string | null | undefined;
 };
 export type TopPageArtistsPaginationQuery$variables = {
   after?: string | null | undefined;
-  by: RankBy;
-  filter: StatsFilter;
+  by: SpotifyRankBy;
+  filter: SpotifyStatsFilter;
   first?: number | null | undefined;
 };
 export type TopPageArtistsPaginationQuery$data = {
@@ -113,15 +113,15 @@ return {
         "args": [
           (v3/*:: as any*/)
         ],
-        "concreteType": "Stats",
+        "concreteType": "SpotifyStats",
         "kind": "LinkedField",
-        "name": "stats",
+        "name": "spotifyStats",
         "plural": false,
         "selections": [
           {
             "alias": null,
             "args": (v5/*:: as any*/),
-            "concreteType": "RankedArtistConnection",
+            "concreteType": "SpotifyArtistRankedConnection",
             "kind": "LinkedField",
             "name": "topArtists",
             "plural": false,
@@ -129,7 +129,7 @@ return {
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "RankedArtistEdge",
+                "concreteType": "SpotifyArtistRankedEdge",
                 "kind": "LinkedField",
                 "name": "edges",
                 "plural": true,
@@ -158,7 +158,7 @@ return {
                   {
                     "alias": null,
                     "args": null,
-                    "concreteType": "Artist",
+                    "concreteType": "SpotifyArtist",
                     "kind": "LinkedField",
                     "name": "node",
                     "plural": false,
@@ -249,16 +249,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "f18c8bb12321ce5076bd9c942ff046ba",
+    "cacheID": "4da08a15caaeb3a89fab6aab27457339",
     "id": null,
     "metadata": {},
     "name": "TopPageArtistsPaginationQuery",
     "operationKind": "query",
-    "text": "query TopPageArtistsPaginationQuery(\n  $after: String\n  $by: RankBy!\n  $filter: StatsFilter!\n  $first: Int = 50\n) {\n  ...TopPageArtists_query_19NMb\n}\n\nfragment TopPageArtists_query_19NMb on Query {\n  stats(filter: $filter) {\n    topArtists(first: $first, after: $after, by: $by) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          name\n          imageUrl\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
+    "text": "query TopPageArtistsPaginationQuery(\n  $after: String\n  $by: SpotifyRankBy!\n  $filter: SpotifyStatsFilter!\n  $first: Int = 50\n) {\n  ...TopPageArtists_query_19NMb\n}\n\nfragment TopPageArtists_query_19NMb on Query {\n  spotifyStats(filter: $filter) {\n    topArtists(first: $first, after: $after, by: $by) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          name\n          imageUrl\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "c327260ae778faf37910d8384b1267e5";
+(node as any).hash = "8d488d6f7eda62c6a49cf287d8e956fb";
 
 export default node;

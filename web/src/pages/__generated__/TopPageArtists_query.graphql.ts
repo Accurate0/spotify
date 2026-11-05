@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<cebab9308c273dc2549a901fe53da237>>
+ * @generated SignedSource<<e6156a06624769098cda4e295e82d782>>
  * @lightSyntaxTransform
  */
 
@@ -10,7 +10,7 @@
 import { ReaderFragment } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type TopPageArtists_query$data = {
-  readonly stats: {
+  readonly spotifyStats: {
     readonly topArtists: {
       readonly edges: ReadonlyArray<{
         readonly minutesPlayed: number;
@@ -35,7 +35,7 @@ import TopPageArtistsPaginationQuery_graphql from './TopPageArtistsPaginationQue
 
 const node: ReaderFragment = (function(){
 var v0 = [
-  "stats",
+  "spotifyStats",
   "topArtists"
 ];
 return {
@@ -95,9 +95,9 @@ return {
           "variableName": "filter"
         }
       ],
-      "concreteType": "Stats",
+      "concreteType": "SpotifyStats",
       "kind": "LinkedField",
-      "name": "stats",
+      "name": "spotifyStats",
       "plural": false,
       "selections": [
         {
@@ -109,7 +109,7 @@ return {
               "variableName": "by"
             }
           ],
-          "concreteType": "RankedArtistConnection",
+          "concreteType": "SpotifyArtistRankedConnection",
           "kind": "LinkedField",
           "name": "__TopPageArtists_topArtists_connection",
           "plural": false,
@@ -117,7 +117,7 @@ return {
             {
               "alias": null,
               "args": null,
-              "concreteType": "RankedArtistEdge",
+              "concreteType": "SpotifyArtistRankedEdge",
               "kind": "LinkedField",
               "name": "edges",
               "plural": true,
@@ -146,7 +146,7 @@ return {
                 {
                   "alias": null,
                   "args": null,
-                  "concreteType": "Artist",
+                  "concreteType": "SpotifyArtist",
                   "kind": "LinkedField",
                   "name": "node",
                   "plural": false,
@@ -229,6 +229,6 @@ return {
 };
 })();
 
-(node as any).hash = "c327260ae778faf37910d8384b1267e5";
+(node as any).hash = "8d488d6f7eda62c6a49cf287d8e956fb";
 
 export default node;

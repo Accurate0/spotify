@@ -28,6 +28,7 @@ impl<'de> Deserialize<'de> for Upload {
 cynic::impl_scalar!(Upload, schema::Upload);
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyAccount")]
 pub struct Account {
     pub id: cynic::Id,
     pub slug: String,
@@ -39,7 +40,7 @@ pub struct Account {
 #[derive(cynic::QueryFragment, Debug)]
 #[cynic(graphql_type = "Query")]
 pub struct AccountsQuery {
-    pub accounts: Vec<Account>,
+    pub spotify_accounts: Vec<Account>,
 }
 
 #[derive(cynic::QueryVariables)]
@@ -51,7 +52,7 @@ pub struct AccountVariables {
 #[cynic(graphql_type = "Query", variables = "AccountVariables")]
 pub struct AccountQuery {
     #[arguments(slug: $slug)]
-    pub account: Option<Account>,
+    pub spotify_account: Option<Account>,
 }
 
 #[derive(cynic::QueryVariables)]
@@ -64,10 +65,11 @@ pub struct FileExistsVariables {
 #[cynic(graphql_type = "Query", variables = "FileExistsVariables")]
 pub struct FileExistsQuery {
     #[arguments(account: $account, sha256: $sha256)]
-    pub file_exists: bool,
+    pub spotify_file_exists: bool,
 }
 
 #[derive(cynic::InputObject)]
+#[cynic(graphql_type = "SpotifyCreateAccountInput")]
 pub struct CreateAccountInput {
     pub slug: String,
     pub display_name: Option<String>,
@@ -79,6 +81,7 @@ pub struct CreateAccountVariables {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyCreateAccountPayload")]
 pub struct CreateAccountPayload {
     pub account: Account,
 }
@@ -87,15 +90,17 @@ pub struct CreateAccountPayload {
 #[cynic(graphql_type = "Mutation", variables = "CreateAccountVariables")]
 pub struct CreateAccount {
     #[arguments(input: $input)]
-    pub create_account: CreateAccountPayload,
+    pub spotify_create_account: CreateAccountPayload,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyExport")]
 pub struct Export {
     pub id: cynic::Id,
 }
 
 #[derive(cynic::InputObject)]
+#[cynic(graphql_type = "SpotifyCreateExportInput")]
 pub struct CreateExportInput {
     pub account: String,
     pub label: String,
@@ -108,6 +113,7 @@ pub struct CreateExportVariables {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyCreateExportPayload")]
 pub struct CreateExportPayload {
     pub export: Export,
 }
@@ -116,10 +122,11 @@ pub struct CreateExportPayload {
 #[cynic(graphql_type = "Mutation", variables = "CreateExportVariables")]
 pub struct CreateExport {
     #[arguments(input: $input)]
-    pub create_export: CreateExportPayload,
+    pub spotify_create_export: CreateExportPayload,
 }
 
 #[derive(cynic::Enum, Clone, Copy, Debug, PartialEq, Eq)]
+#[cynic(graphql_type = "SpotifyUploadStatus")]
 pub enum UploadStatus {
     Imported,
     Duplicate,
@@ -127,6 +134,7 @@ pub enum UploadStatus {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyExportFile")]
 pub struct ExportFile {
     pub rows_total: i32,
     pub rows_inserted: i32,
@@ -134,12 +142,14 @@ pub struct ExportFile {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyUploadExportFilePayload")]
 pub struct UploadExportFilePayload {
     pub status: UploadStatus,
     pub file: Option<ExportFile>,
 }
 
 #[derive(cynic::InputObject)]
+#[cynic(graphql_type = "SpotifyUploadExportFileInput")]
 pub struct UploadExportFileInput {
     pub export_id: cynic::Id,
     pub name: String,
@@ -156,10 +166,11 @@ pub struct UploadExportFileVariables {
 #[cynic(graphql_type = "Mutation", variables = "UploadExportFileVariables")]
 pub struct UploadExportFile {
     #[arguments(input: $input, file: $file)]
-    pub upload_export_file: UploadExportFilePayload,
+    pub spotify_upload_export_file: UploadExportFilePayload,
 }
 
 #[derive(cynic::InputObject)]
+#[cynic(graphql_type = "SpotifyFinalizeExportInput")]
 pub struct FinalizeExportInput {
     pub export_id: cynic::Id,
 }
@@ -171,6 +182,7 @@ pub struct FinalizeExportVariables {
 
 #[allow(dead_code)]
 #[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyFinalizeExportPayload")]
 pub struct FinalizeExportPayload {
     pub export: Export,
 }
@@ -181,5 +193,5 @@ pub struct FinalizeExportPayload {
 #[cynic(graphql_type = "Mutation", variables = "FinalizeExportVariables")]
 pub struct FinalizeExport {
     #[arguments(input: $input)]
-    pub finalize_export: FinalizeExportPayload,
+    pub spotify_finalize_export: FinalizeExportPayload,
 }

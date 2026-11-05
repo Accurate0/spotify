@@ -12,6 +12,7 @@ use super::page::{Page, PlainConnection};
 use super::stats::{Stats, StatsFilter};
 
 #[derive(Enum, Clone, Copy, PartialEq, Eq)]
+#[graphql(name = "SpotifyItemKind")]
 #[graphql(remote = "spotify_export::ItemKind")]
 pub enum ItemKind {
     Track,
@@ -63,7 +64,7 @@ impl Item {
     }
 }
 
-#[Object]
+#[Object(name = "SpotifyItem")]
 impl Item {
     pub async fn id(&self) -> ID {
         encode(NodeType::Item, &self.uri)
@@ -169,7 +170,7 @@ impl Artist {
     }
 }
 
-#[Object]
+#[Object(name = "SpotifyArtist")]
 impl Artist {
     pub async fn id(&self) -> ID {
         encode(NodeType::Artist, &self.name)
@@ -214,7 +215,7 @@ pub struct Album {
     pub release_year: Option<i32>,
 }
 
-#[Object]
+#[Object(name = "SpotifyAlbum")]
 impl Album {
     async fn name(&self) -> &str {
         &self.name
@@ -250,7 +251,7 @@ impl Search {
     }
 }
 
-#[Object]
+#[Object(name = "SpotifySearch")]
 impl Search {
     async fn items(
         &self,

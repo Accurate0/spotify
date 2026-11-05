@@ -5,6 +5,7 @@ use sqlx::PgPool;
 use super::node::{NodeType, encode};
 
 #[derive(Enum, Clone, Copy, PartialEq, Eq)]
+#[graphql(name = "SpotifyFileKind")]
 #[graphql(remote = "spotify_export::FileKind")]
 pub enum FileKind {
     ExtendedAudio,
@@ -71,7 +72,7 @@ impl Account {
     }
 }
 
-#[Object]
+#[Object(name = "SpotifyAccount")]
 impl Account {
     pub async fn id(&self) -> ID {
         encode(NodeType::Account, self.id)
@@ -164,7 +165,7 @@ impl Export {
     }
 }
 
-#[Object]
+#[Object(name = "SpotifyExport")]
 impl Export {
     pub async fn id(&self) -> ID {
         encode(NodeType::Export, self.id)
@@ -233,7 +234,7 @@ impl ExportFile {
     }
 }
 
-#[Object]
+#[Object(name = "SpotifyExportFile")]
 impl ExportFile {
     pub async fn id(&self) -> ID {
         encode(NodeType::ExportFile, self.id)

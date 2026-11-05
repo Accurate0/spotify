@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<85bb5552414cc9179b7aa7da183160d6>>
+ * @generated SignedSource<<136402ecb9a389a1b3fcfa594b8f6723>>
  * @lightSyntaxTransform
  */
 
@@ -10,12 +10,12 @@
 import { ConcreteRequest } from 'relay-runtime';
 export type FilterProviderAccountsQuery$variables = Record<PropertyKey, never>;
 export type FilterProviderAccountsQuery$data = {
-  readonly accounts: ReadonlyArray<{
+  readonly spotifyAccounts: ReadonlyArray<{
     readonly displayName: string;
     readonly id: string;
     readonly slug: string;
   }>;
-  readonly stats: {
+  readonly spotifyStats: {
     readonly summary: {
       readonly firstPlayed: string | null | undefined;
       readonly lastPlayed: string | null | undefined;
@@ -32,9 +32,9 @@ var v0 = [
   {
     "alias": null,
     "args": null,
-    "concreteType": "Account",
+    "concreteType": "SpotifyAccount",
     "kind": "LinkedField",
-    "name": "accounts",
+    "name": "spotifyAccounts",
     "plural": true,
     "selections": [
       {
@@ -77,15 +77,15 @@ var v0 = [
         }
       }
     ],
-    "concreteType": "Stats",
+    "concreteType": "SpotifyStats",
     "kind": "LinkedField",
-    "name": "stats",
+    "name": "spotifyStats",
     "plural": false,
     "selections": [
       {
         "alias": null,
         "args": null,
-        "concreteType": "Summary",
+        "concreteType": "SpotifySummary",
         "kind": "LinkedField",
         "name": "summary",
         "plural": false,
@@ -108,7 +108,7 @@ var v0 = [
         "storageKey": null
       }
     ],
-    "storageKey": "stats(filter:{\"kinds\":[\"TRACK\",\"EPISODE\",\"AUDIOBOOK\"],\"minMsPlayed\":0})"
+    "storageKey": "spotifyStats(filter:{\"kinds\":[\"TRACK\",\"EPISODE\",\"AUDIOBOOK\"],\"minMsPlayed\":0})"
   }
 ];
 return {
@@ -129,16 +129,16 @@ return {
     "selections": (v0/*:: as any*/)
   },
   "params": {
-    "cacheID": "eacd327497aaf427042ae79ab9ed627e",
+    "cacheID": "9c6f30ea9ab53b895cf38c0f2dc9dc52",
     "id": null,
     "metadata": {},
     "name": "FilterProviderAccountsQuery",
     "operationKind": "query",
-    "text": "query FilterProviderAccountsQuery {\n  accounts {\n    id\n    slug\n    displayName\n  }\n  stats(filter: {kinds: [TRACK, EPISODE, AUDIOBOOK], minMsPlayed: 0}) {\n    summary {\n      firstPlayed\n      lastPlayed\n    }\n  }\n}\n"
+    "text": "query FilterProviderAccountsQuery {\n  spotifyAccounts {\n    id\n    slug\n    displayName\n  }\n  spotifyStats(filter: {kinds: [TRACK, EPISODE, AUDIOBOOK], minMsPlayed: 0}) {\n    summary {\n      firstPlayed\n      lastPlayed\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "acb9e00a4c5722f4cacd824567b94d9c";
+(node as any).hash = "008084e6a04613fc26d6b3b5c9ada434";
 
 export default node;

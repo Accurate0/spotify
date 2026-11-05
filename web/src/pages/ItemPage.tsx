@@ -19,8 +19,8 @@ export default function ItemPage() {
 
   const data = useLazyLoadQuery<ItemPageQuery>(
     graphql`
-      query ItemPageQuery($uri: String!, $filter: StatsFilter!) {
-        item(uri: $uri) {
+      query ItemPageQuery($uri: String!, $filter: SpotifyStatsFilter!) {
+        spotifyItem(uri: $uri) {
           uri
           kind
           name
@@ -55,7 +55,7 @@ export default function ItemPage() {
     { uri, filter: itemFilter },
   );
 
-  const item = data.item;
+  const item = data.spotifyItem;
   if (!item) {
     return <p className="text-muted-foreground">No track or episode {uri}.</p>;
   }

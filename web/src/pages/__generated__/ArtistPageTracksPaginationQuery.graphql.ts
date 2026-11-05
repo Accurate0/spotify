@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<848beca81b1afb9cde9fbfddba5baf62>>
+ * @generated SignedSource<<3a39b4c54076347a41de72582184eeb1>>
  * @lightSyntaxTransform
  */
 
@@ -9,18 +9,18 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
-export type ItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
-export type StatsFilter = {
+export type SpotifyItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
+export type SpotifyStatsFilter = {
   accounts?: ReadonlyArray<string>;
   from?: string | null | undefined;
-  kinds?: ReadonlyArray<ItemKind>;
+  kinds?: ReadonlyArray<SpotifyItemKind>;
   minMsPlayed?: number;
   timeZone?: string;
   to?: string | null | undefined;
 };
 export type ArtistPageTracksPaginationQuery$variables = {
   after?: string | null | undefined;
-  filter: StatsFilter;
+  filter: SpotifyStatsFilter;
   first?: number | null | undefined;
   id: string;
 };
@@ -159,7 +159,7 @@ return {
                 "args": [
                   (v3/*:: as any*/)
                 ],
-                "concreteType": "Stats",
+                "concreteType": "SpotifyStats",
                 "kind": "LinkedField",
                 "name": "stats",
                 "plural": false,
@@ -167,7 +167,7 @@ return {
                   {
                     "alias": null,
                     "args": (v7/*:: as any*/),
-                    "concreteType": "RankedItemConnection",
+                    "concreteType": "SpotifyItemRankedConnection",
                     "kind": "LinkedField",
                     "name": "topItems",
                     "plural": false,
@@ -175,7 +175,7 @@ return {
                       {
                         "alias": null,
                         "args": null,
-                        "concreteType": "RankedItemEdge",
+                        "concreteType": "SpotifyItemRankedEdge",
                         "kind": "LinkedField",
                         "name": "edges",
                         "plural": true,
@@ -204,7 +204,7 @@ return {
                           {
                             "alias": null,
                             "args": null,
-                            "concreteType": "Item",
+                            "concreteType": "SpotifyItem",
                             "kind": "LinkedField",
                             "name": "node",
                             "plural": false,
@@ -228,7 +228,7 @@ return {
                               {
                                 "alias": null,
                                 "args": null,
-                                "concreteType": "Album",
+                                "concreteType": "SpotifyAlbum",
                                 "kind": "LinkedField",
                                 "name": "album",
                                 "plural": false,
@@ -292,7 +292,7 @@ return {
                 "storageKey": null
               }
             ],
-            "type": "Artist",
+            "type": "SpotifyArtist",
             "abstractKey": null
           }
         ],
@@ -301,16 +301,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "e7d1e20e5a6dca4e0405618f6fc02103",
+    "cacheID": "ba5ed7aca97f42ada286ca9e7b56a858",
     "id": null,
     "metadata": {},
     "name": "ArtistPageTracksPaginationQuery",
     "operationKind": "query",
-    "text": "query ArtistPageTracksPaginationQuery(\n  $after: String\n  $filter: StatsFilter!\n  $first: Int = 20\n  $id: ID!\n) {\n  node(id: $id) {\n    __typename\n    ...ArtistPageTracks_artist_G9cLv\n    id\n  }\n}\n\nfragment ArtistPageTracks_artist_G9cLv on Artist {\n  stats(filter: $filter) {\n    topItems(first: $first, after: $after) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          uri\n          name\n          artworkUrl\n          album {\n            name\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n  id\n}\n"
+    "text": "query ArtistPageTracksPaginationQuery(\n  $after: String\n  $filter: SpotifyStatsFilter!\n  $first: Int = 20\n  $id: ID!\n) {\n  node(id: $id) {\n    __typename\n    ...ArtistPageTracks_artist_G9cLv\n    id\n  }\n}\n\nfragment ArtistPageTracks_artist_G9cLv on SpotifyArtist {\n  stats(filter: $filter) {\n    topItems(first: $first, after: $after) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          uri\n          name\n          artworkUrl\n          album {\n            name\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n  id\n}\n"
   }
 };
 })();
 
-(node as any).hash = "971b70aa0aaabfe6bcc399d023066317";
+(node as any).hash = "3ff71349c55fc7f4c2398dd353a3225f";
 
 export default node;

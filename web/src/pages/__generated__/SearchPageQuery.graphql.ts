@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<25d72cecb9c73d08cebe114a6c2e9847>>
+ * @generated SignedSource<<aacd04495365ee3bb57674582d2ea5aa>>
  * @lightSyntaxTransform
  */
 
@@ -8,12 +8,12 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type ItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
+export type SpotifyItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
 export type SearchPageQuery$variables = {
   query: string;
 };
 export type SearchPageQuery$data = {
-  readonly search: {
+  readonly spotifySearch: {
     readonly artists: {
       readonly edges: ReadonlyArray<{
         readonly node: {
@@ -32,7 +32,7 @@ export type SearchPageQuery$data = {
           readonly artistName: string | null | undefined;
           readonly artworkUrl: string | null | undefined;
           readonly id: string;
-          readonly kind: ItemKind;
+          readonly kind: SpotifyItemKind;
           readonly name: string | null | undefined;
           readonly uri: string;
         };
@@ -77,9 +77,9 @@ v3 = [
         "variableName": "query"
       }
     ],
-    "concreteType": "Search",
+    "concreteType": "SpotifySearch",
     "kind": "LinkedField",
-    "name": "search",
+    "name": "spotifySearch",
     "plural": false,
     "selections": [
       {
@@ -91,7 +91,7 @@ v3 = [
             "value": 8
           }
         ],
-        "concreteType": "ArtistConnection",
+        "concreteType": "SpotifyArtistConnection",
         "kind": "LinkedField",
         "name": "artists",
         "plural": false,
@@ -99,7 +99,7 @@ v3 = [
           {
             "alias": null,
             "args": null,
-            "concreteType": "ArtistEdge",
+            "concreteType": "SpotifyArtistEdge",
             "kind": "LinkedField",
             "name": "edges",
             "plural": true,
@@ -107,7 +107,7 @@ v3 = [
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "Artist",
+                "concreteType": "SpotifyArtist",
                 "kind": "LinkedField",
                 "name": "node",
                 "plural": false,
@@ -139,7 +139,7 @@ v3 = [
             "value": 25
           }
         ],
-        "concreteType": "ItemConnection",
+        "concreteType": "SpotifyItemConnection",
         "kind": "LinkedField",
         "name": "items",
         "plural": false,
@@ -147,7 +147,7 @@ v3 = [
           {
             "alias": null,
             "args": null,
-            "concreteType": "ItemEdge",
+            "concreteType": "SpotifyItemEdge",
             "kind": "LinkedField",
             "name": "edges",
             "plural": true,
@@ -155,7 +155,7 @@ v3 = [
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "Item",
+                "concreteType": "SpotifyItem",
                 "kind": "LinkedField",
                 "name": "node",
                 "plural": false,
@@ -193,7 +193,7 @@ v3 = [
                   {
                     "alias": null,
                     "args": null,
-                    "concreteType": "Album",
+                    "concreteType": "SpotifyAlbum",
                     "kind": "LinkedField",
                     "name": "album",
                     "plural": false,
@@ -233,16 +233,16 @@ return {
     "selections": (v3/*:: as any*/)
   },
   "params": {
-    "cacheID": "c878a2e0a77d5f7391924fee96ae1189",
+    "cacheID": "bfeb8dac2092f6caadb4a30c93e3a6c4",
     "id": null,
     "metadata": {},
     "name": "SearchPageQuery",
     "operationKind": "query",
-    "text": "query SearchPageQuery(\n  $query: String!\n) {\n  search(query: $query) {\n    artists(first: 8) {\n      edges {\n        node {\n          id\n          name\n          imageUrl\n        }\n      }\n    }\n    items(first: 25) {\n      edges {\n        node {\n          id\n          uri\n          kind\n          name\n          artistName\n          artworkUrl\n          album {\n            name\n          }\n        }\n      }\n    }\n  }\n}\n"
+    "text": "query SearchPageQuery(\n  $query: String!\n) {\n  spotifySearch(query: $query) {\n    artists(first: 8) {\n      edges {\n        node {\n          id\n          name\n          imageUrl\n        }\n      }\n    }\n    items(first: 25) {\n      edges {\n        node {\n          id\n          uri\n          kind\n          name\n          artistName\n          artworkUrl\n          album {\n            name\n          }\n        }\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "2eb157cc33b59af778cf16c9f6b2a9f2";
+(node as any).hash = "cdeeaf2a81f936137f8659617b710eec";
 
 export default node;

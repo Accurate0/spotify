@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<03e63cf6b26a73792672dfe74d582e8b>>
+ * @generated SignedSource<<e3633f6fd7f7712012a02b77baf58a30>>
  * @lightSyntaxTransform
  */
 
@@ -9,21 +9,21 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
-export type ItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
-export type StatsFilter = {
+export type SpotifyItemKind = "AUDIOBOOK" | "EPISODE" | "TRACK" | "%future added value";
+export type SpotifyStatsFilter = {
   accounts?: ReadonlyArray<string>;
   from?: string | null | undefined;
-  kinds?: ReadonlyArray<ItemKind>;
+  kinds?: ReadonlyArray<SpotifyItemKind>;
   minMsPlayed?: number;
   timeZone?: string;
   to?: string | null | undefined;
 };
 export type ItemPageQuery$variables = {
-  filter: StatsFilter;
+  filter: SpotifyStatsFilter;
   uri: string;
 };
 export type ItemPageQuery$data = {
-  readonly item: {
+  readonly spotifyItem: {
     readonly album: {
       readonly name: string;
     } | null | undefined;
@@ -34,7 +34,7 @@ export type ItemPageQuery$data = {
     readonly artworkUrl: string | null | undefined;
     readonly durationMs: number | null | undefined;
     readonly explicit: boolean | null | undefined;
-    readonly kind: ItemKind;
+    readonly kind: SpotifyItemKind;
     readonly name: string | null | undefined;
     readonly releaseYear: number | null | undefined;
     readonly stats: {
@@ -139,7 +139,7 @@ v11 = [
 v12 = {
   "alias": null,
   "args": null,
-  "concreteType": "Album",
+  "concreteType": "SpotifyAlbum",
   "kind": "LinkedField",
   "name": "album",
   "plural": false,
@@ -156,7 +156,7 @@ v13 = [
 v14 = {
   "alias": null,
   "args": null,
-  "concreteType": "Completion",
+  "concreteType": "SpotifyCompletion",
   "kind": "LinkedField",
   "name": "completion",
   "plural": false,
@@ -240,9 +240,9 @@ return {
       {
         "alias": null,
         "args": (v2/*:: as any*/),
-        "concreteType": "Item",
+        "concreteType": "SpotifyItem",
         "kind": "LinkedField",
-        "name": "item",
+        "name": "spotifyItem",
         "plural": false,
         "selections": [
           (v3/*:: as any*/),
@@ -256,7 +256,7 @@ return {
           {
             "alias": null,
             "args": null,
-            "concreteType": "Artist",
+            "concreteType": "SpotifyArtist",
             "kind": "LinkedField",
             "name": "artist",
             "plural": false,
@@ -267,7 +267,7 @@ return {
           {
             "alias": null,
             "args": (v13/*:: as any*/),
-            "concreteType": "Stats",
+            "concreteType": "SpotifyStats",
             "kind": "LinkedField",
             "name": "stats",
             "plural": false,
@@ -275,7 +275,7 @@ return {
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "Summary",
+                "concreteType": "SpotifySummary",
                 "kind": "LinkedField",
                 "name": "summary",
                 "plural": false,
@@ -297,7 +297,7 @@ return {
               {
                 "alias": null,
                 "args": (v15/*:: as any*/),
-                "concreteType": "TimelinePoint",
+                "concreteType": "SpotifyTimelinePoint",
                 "kind": "LinkedField",
                 "name": "timeline",
                 "plural": true,
@@ -337,9 +337,9 @@ return {
       {
         "alias": null,
         "args": (v2/*:: as any*/),
-        "concreteType": "Item",
+        "concreteType": "SpotifyItem",
         "kind": "LinkedField",
-        "name": "item",
+        "name": "spotifyItem",
         "plural": false,
         "selections": [
           (v3/*:: as any*/),
@@ -353,7 +353,7 @@ return {
           {
             "alias": null,
             "args": null,
-            "concreteType": "Artist",
+            "concreteType": "SpotifyArtist",
             "kind": "LinkedField",
             "name": "artist",
             "plural": false,
@@ -367,7 +367,7 @@ return {
           {
             "alias": null,
             "args": (v13/*:: as any*/),
-            "concreteType": "Stats",
+            "concreteType": "SpotifyStats",
             "kind": "LinkedField",
             "name": "stats",
             "plural": false,
@@ -375,7 +375,7 @@ return {
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "Summary",
+                "concreteType": "SpotifySummary",
                 "kind": "LinkedField",
                 "name": "summary",
                 "plural": false,
@@ -424,7 +424,7 @@ return {
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "Play",
+                "concreteType": "SpotifyPlay",
                 "kind": "LinkedField",
                 "name": "firstPlay",
                 "plural": false,
@@ -433,7 +433,7 @@ return {
                   {
                     "alias": null,
                     "args": null,
-                    "concreteType": "Item",
+                    "concreteType": "SpotifyItem",
                     "kind": "LinkedField",
                     "name": "item",
                     "plural": false,
@@ -456,7 +456,7 @@ return {
                     "value": 1
                   }
                 ],
-                "concreteType": "DayStat",
+                "concreteType": "SpotifyDayStat",
                 "kind": "LinkedField",
                 "name": "topDays",
                 "plural": true,
@@ -476,7 +476,7 @@ return {
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "ListeningDays",
+                "concreteType": "SpotifyListeningDays",
                 "kind": "LinkedField",
                 "name": "listeningDays",
                 "plural": false,
@@ -491,7 +491,7 @@ return {
                   {
                     "alias": null,
                     "args": null,
-                    "concreteType": "Streak",
+                    "concreteType": "SpotifyStreak",
                     "kind": "LinkedField",
                     "name": "longestStreak",
                     "plural": false,
@@ -520,7 +520,7 @@ return {
               {
                 "alias": null,
                 "args": (v15/*:: as any*/),
-                "concreteType": "TimelinePoint",
+                "concreteType": "SpotifyTimelinePoint",
                 "kind": "LinkedField",
                 "name": "timeline",
                 "plural": true,
@@ -534,7 +534,7 @@ return {
               {
                 "alias": null,
                 "args": (v21/*:: as any*/),
-                "concreteType": "PlayConnection",
+                "concreteType": "SpotifyPlayConnection",
                 "kind": "LinkedField",
                 "name": "plays",
                 "plural": false,
@@ -542,7 +542,7 @@ return {
                   {
                     "alias": null,
                     "args": null,
-                    "concreteType": "PlayEdge",
+                    "concreteType": "SpotifyPlayEdge",
                     "kind": "LinkedField",
                     "name": "edges",
                     "plural": true,
@@ -550,7 +550,7 @@ return {
                       {
                         "alias": null,
                         "args": null,
-                        "concreteType": "Play",
+                        "concreteType": "SpotifyPlay",
                         "kind": "LinkedField",
                         "name": "node",
                         "plural": false,
@@ -573,7 +573,7 @@ return {
                           {
                             "alias": null,
                             "args": null,
-                            "concreteType": "Account",
+                            "concreteType": "SpotifyAccount",
                             "kind": "LinkedField",
                             "name": "account",
                             "plural": false,
@@ -656,16 +656,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "ea06d0b6d81cde6dab26aabb17dcd8f2",
+    "cacheID": "20119c3b9b25bc61f225eeeaa1aa4804",
     "id": null,
     "metadata": {},
     "name": "ItemPageQuery",
     "operationKind": "query",
-    "text": "query ItemPageQuery(\n  $uri: String!\n  $filter: StatsFilter!\n) {\n  item(uri: $uri) {\n    uri\n    kind\n    name\n    artistName\n    artworkUrl\n    durationMs\n    explicit\n    releaseYear\n    artist {\n      name\n      id\n    }\n    album {\n      name\n    }\n    stats(filter: $filter) {\n      summary {\n        ...StatTiles_summary\n      }\n      completion {\n        average\n        finishedShare\n      }\n      ...Firsts_stats\n      timeline(bucket: MONTH) {\n        ...TimelineChart_points\n      }\n    }\n    ...PlayHistory_item_Vt7Yj\n    id\n  }\n}\n\nfragment Firsts_stats on Stats {\n  firstPlay {\n    ts\n    item {\n      uri\n      name\n      id\n    }\n  }\n  topDays(first: 1) {\n    date\n    plays\n    minutesPlayed\n  }\n  listeningDays {\n    activeDays\n    longestStreak {\n      days\n      start\n      end\n    }\n  }\n}\n\nfragment PlayHistory_item_Vt7Yj on Item {\n  stats(filter: $filter) {\n    plays(first: 20) {\n      edges {\n        node {\n          ts\n          msPlayed\n          skipped\n          account {\n            displayName\n            id\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n  id\n}\n\nfragment StatTiles_summary on Summary {\n  plays\n  minutesPlayed\n  distinctTracks\n  distinctArtists\n  skipRate\n  firstPlayed\n  lastPlayed\n}\n\nfragment TimelineChart_points on TimelinePoint {\n  start\n  plays\n  minutesPlayed\n}\n"
+    "text": "query ItemPageQuery(\n  $uri: String!\n  $filter: SpotifyStatsFilter!\n) {\n  spotifyItem(uri: $uri) {\n    uri\n    kind\n    name\n    artistName\n    artworkUrl\n    durationMs\n    explicit\n    releaseYear\n    artist {\n      name\n      id\n    }\n    album {\n      name\n    }\n    stats(filter: $filter) {\n      summary {\n        ...StatTiles_summary\n      }\n      completion {\n        average\n        finishedShare\n      }\n      ...Firsts_stats\n      timeline(bucket: MONTH) {\n        ...TimelineChart_points\n      }\n    }\n    ...PlayHistory_item_Vt7Yj\n    id\n  }\n}\n\nfragment Firsts_stats on SpotifyStats {\n  firstPlay {\n    ts\n    item {\n      uri\n      name\n      id\n    }\n  }\n  topDays(first: 1) {\n    date\n    plays\n    minutesPlayed\n  }\n  listeningDays {\n    activeDays\n    longestStreak {\n      days\n      start\n      end\n    }\n  }\n}\n\nfragment PlayHistory_item_Vt7Yj on SpotifyItem {\n  stats(filter: $filter) {\n    plays(first: 20) {\n      edges {\n        node {\n          ts\n          msPlayed\n          skipped\n          account {\n            displayName\n            id\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n  id\n}\n\nfragment StatTiles_summary on SpotifySummary {\n  plays\n  minutesPlayed\n  distinctTracks\n  distinctArtists\n  skipRate\n  firstPlayed\n  lastPlayed\n}\n\nfragment TimelineChart_points on SpotifyTimelinePoint {\n  start\n  plays\n  minutesPlayed\n}\n"
   }
 };
 })();
 
-(node as any).hash = "edfc158d762f0f7bdacda399d6f688c0";
+(node as any).hash = "0d622ad7a9809158bacb17d5ef97d722";
 
 export default node;

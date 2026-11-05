@@ -156,7 +156,7 @@ async fn main() -> anyhow::Result<()> {
         Command::Accounts {
             command: AccountsCommand::List,
         } => {
-            let accounts = client.run(AccountsQuery::build(())).await?.accounts;
+            let accounts = client.run(AccountsQuery::build(())).await?.spotify_accounts;
             if accounts.is_empty() {
                 println!("no accounts, add one with `spotify accounts add <slug>`");
             }
@@ -181,7 +181,7 @@ async fn main() -> anyhow::Result<()> {
                     },
                 }))
                 .await?
-                .create_account
+                .spotify_create_account
                 .account;
             println!("created account {}", account.slug);
         }

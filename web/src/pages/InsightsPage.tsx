@@ -151,11 +151,11 @@ export default function InsightsPage() {
 
   const data = useLazyLoadQuery<InsightsPageQuery>(
     graphql`
-      query InsightsPageQuery($filter: StatsFilter!, $allPlays: StatsFilter!, $bucket: TimeBucket!) {
-        enrichment {
+      query InsightsPageQuery($filter: SpotifyStatsFilter!, $allPlays: SpotifyStatsFilter!, $bucket: SpotifyTimeBucket!) {
+        spotifyEnrichment {
           listeningCoverage
         }
-        stats(filter: $filter) {
+        spotifyStats(filter: $filter) {
           topGenres(first: 10) {
             edges {
               rank
@@ -285,7 +285,7 @@ export default function InsightsPage() {
             minutesPlayed
           }
         }
-        skips: stats(filter: $allPlays) {
+        skips: spotifyStats(filter: $allPlays) {
           completion {
             average
             finishedShare
@@ -341,15 +341,15 @@ export default function InsightsPage() {
     { filter, allPlays, bucket: state.range === "all" ? "YEAR" : "MONTH" },
   );
 
-  const s = data.stats;
+  const s = data.spotifyStats;
   const days = s.listeningDays;
   const sessions = s.sessions;
 
   return (
     <div className="space-y-6">
-      {data.enrichment.listeningCoverage < 0.99 && (
+      {data.spotifyEnrichment.listeningCoverage < 0.99 && (
         <p className="text-muted-foreground text-sm">
-          Genres, release years and track lengths cover {formatPercent(data.enrichment.listeningCoverage)} of your
+          Genres, release years and track lengths cover {formatPercent(data.spotifyEnrichment.listeningCoverage)} of your
           listening so far; Spotify metadata is still being fetched.
         </p>
       )}

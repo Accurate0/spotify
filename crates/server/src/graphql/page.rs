@@ -73,7 +73,7 @@ pub struct RankedConnectionName;
 
 impl ConnectionNameType for RankedConnectionName {
     fn type_name<T: OutputType>() -> String {
-        format!("Ranked{}Connection", T::type_name())
+        format!("{}RankedConnection", T::type_name())
     }
 }
 
@@ -81,7 +81,7 @@ pub struct RankedEdgeName;
 
 impl EdgeNameType for RankedEdgeName {
     fn type_name<T: OutputType>() -> String {
-        format!("Ranked{}Edge", T::type_name())
+        format!("{}RankedEdge", T::type_name())
     }
 }
 

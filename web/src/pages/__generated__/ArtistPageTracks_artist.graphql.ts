@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<c30cb9340d3eef8ec13a95892bc23180>>
+ * @generated SignedSource<<070614ba5be94b47cd1adf88bf73ffd9>>
  * @lightSyntaxTransform
  */
 
@@ -115,7 +115,7 @@ return {
           "variableName": "filter"
         }
       ],
-      "concreteType": "Stats",
+      "concreteType": "SpotifyStats",
       "kind": "LinkedField",
       "name": "stats",
       "plural": false,
@@ -123,7 +123,7 @@ return {
         {
           "alias": "topItems",
           "args": null,
-          "concreteType": "RankedItemConnection",
+          "concreteType": "SpotifyItemRankedConnection",
           "kind": "LinkedField",
           "name": "__ArtistPageTracks_topItems_connection",
           "plural": false,
@@ -131,7 +131,7 @@ return {
             {
               "alias": null,
               "args": null,
-              "concreteType": "RankedItemEdge",
+              "concreteType": "SpotifyItemRankedEdge",
               "kind": "LinkedField",
               "name": "edges",
               "plural": true,
@@ -160,7 +160,7 @@ return {
                 {
                   "alias": null,
                   "args": null,
-                  "concreteType": "Item",
+                  "concreteType": "SpotifyItem",
                   "kind": "LinkedField",
                   "name": "node",
                   "plural": false,
@@ -184,7 +184,7 @@ return {
                     {
                       "alias": null,
                       "args": null,
-                      "concreteType": "Album",
+                      "concreteType": "SpotifyAlbum",
                       "kind": "LinkedField",
                       "name": "album",
                       "plural": false,
@@ -246,11 +246,11 @@ return {
     },
     (v1/*:: as any*/)
   ],
-  "type": "Artist",
+  "type": "SpotifyArtist",
   "abstractKey": null
 };
 })();
 
-(node as any).hash = "971b70aa0aaabfe6bcc399d023066317";
+(node as any).hash = "3ff71349c55fc7f4c2398dd353a3225f";
 
 export default node;

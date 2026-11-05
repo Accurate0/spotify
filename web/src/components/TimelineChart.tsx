@@ -61,7 +61,7 @@ export default function TimelineChart({
 }) {
   const data = useFragment(
     graphql`
-      fragment TimelineChart_points on TimelinePoint @relay(plural: true) {
+      fragment TimelineChart_points on SpotifyTimelinePoint @relay(plural: true) {
         start
         plays
         minutesPlayed

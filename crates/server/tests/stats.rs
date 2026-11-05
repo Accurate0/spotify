@@ -424,7 +424,10 @@ async fn discoveries_respect_first_play_and_forgotten_needs_a_year(pool: PgPool)
         json!({}),
     )
     .await;
-    assert_eq!(forgotten["spotifyStats"]["forgottenArtists"]["edges"], json!([]));
+    assert_eq!(
+        forgotten["spotifyStats"]["forgottenArtists"]["edges"],
+        json!([])
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]

@@ -175,7 +175,10 @@ pub struct EnrichmentQuery {
 
 /// Progress of the Spotify Web API backfill.
 pub async fn enrichment(client: &Client, tz: Tz) -> anyhow::Result<()> {
-    let e = client.run(EnrichmentQuery::build(())).await?.spotify_enrichment;
+    let e = client
+        .run(EnrichmentQuery::build(()))
+        .await?
+        .spotify_enrichment;
     println!(
         "Tracks     {} enriched, {} pending, {} no longer on Spotify",
         e.tracks_enriched, e.tracks_pending, e.tracks_missing

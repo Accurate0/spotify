@@ -16,7 +16,7 @@ impl Client {
             http: reqwest::Client::builder()
                 .user_agent(concat!("spotify-cli/", env!("CARGO_PKG_VERSION")))
                 .build()?,
-            endpoint: format!("{}/graphql", base_url.trim_end_matches('/')),
+            endpoint: format!("{}/v1/graphql", base_url.trim_end_matches('/')),
             token,
         })
     }

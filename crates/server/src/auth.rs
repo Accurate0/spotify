@@ -1,4 +1,4 @@
-//! Kanidm OIDC bearer auth for /graphql. Tokens come from the SPA (oidc-client-ts) or the CLI
+//! Kanidm OIDC bearer auth for /v1/graphql and /v2/graphql. Tokens come from the SPA (oidc-client-ts) or the CLI
 //! (`ortzi spotify` passes its login token as SPOTIFY_TOKEN), both on the `spotify` public
 //! client, or from the `graph` federation router, which forwards its own client's tokens. Each
 //! Kanidm client is its own issuer with its own keys, so a token is matched to a provider by its

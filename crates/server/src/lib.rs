@@ -22,7 +22,8 @@ use tower_http::trace::TraceLayer;
 /// Export files are up to ~13 MB; leave headroom for multipart overhead and larger exports.
 const MAX_BODY_BYTES: usize = 64 * 1024 * 1024;
 
-/// The API. With `auth` set, every /graphql request needs a valid Kanidm bearer token; `None`
+/// The API: /v1/graphql for direct clients, /v2/graphql with `spotify`-prefixed root fields for
+/// the supergraph. With `auth` set, every graphql request needs a valid Kanidm bearer token; `None`
 /// is for local development only. /health and /art (Spotify artwork, which `<img>` tags fetch
 /// without a token) are always open.
 pub fn router(
@@ -30,9 +31,15 @@ pub fn router(
     auth: Option<auth::Authenticator>,
     artwork: Option<Arc<ArtworkStore>>,
 ) -> Router {
-    let schema = graphql::schema(pool);
-
-    let mut api = Router::new().route("/graphql", get(graphiql).post_service(GraphQL::new(schema)));
+    let mut api = Router::new()
+        .route(
+            "/v1/graphql",
+            get(graphiql).post_service(GraphQL::new(graphql::schema(pool.clone()))),
+        )
+        .route(
+            "/v2/graphql",
+            get(graphiql_v2).post_service(GraphQL::new(graphql::schema_v2(pool))),
+        );
     if let Some(auth) = auth {
         api = api.layer(middleware::from_fn_with_state(auth, auth::require_auth));
     }
@@ -79,5 +86,9 @@ async fn artwork_image(
 }
 
 async fn graphiql() -> impl IntoResponse {
-    Html(GraphiQLSource::build().endpoint("/graphql").finish())
+    Html(GraphiQLSource::build().endpoint("/v1/graphql").finish())
+}
+
+async fn graphiql_v2() -> impl IntoResponse {
+    Html(GraphiQLSource::build().endpoint("/v2/graphql").finish())
 }

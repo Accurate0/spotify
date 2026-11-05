@@ -12,11 +12,15 @@ pub struct QueryRoot;
 
 #[Object(name = "Query")]
 impl QueryRoot {
-    async fn node(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Option<Node>> {
+    pub(super) async fn node(
+        &self,
+        ctx: &Context<'_>,
+        id: ID,
+    ) -> async_graphql::Result<Option<Node>> {
         load_node(ctx.data::<PgPool>()?, &id).await
     }
 
-    async fn nodes(
+    pub(super) async fn nodes(
         &self,
         ctx: &Context<'_>,
         ids: Vec<ID>,
@@ -29,12 +33,12 @@ impl QueryRoot {
         Ok(nodes)
     }
 
-    async fn accounts(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Account>> {
+    pub(super) async fn accounts(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Account>> {
         let pool = ctx.data::<PgPool>()?;
         Ok(Account::all(pool).await?)
     }
 
-    async fn account(
+    pub(super) async fn account(
         &self,
         ctx: &Context<'_>,
         slug: String,
@@ -43,12 +47,15 @@ impl QueryRoot {
     }
 
     /// Listening stats across the filtered plays.
-    async fn stats(&self, #[graphql(default)] filter: StatsFilter) -> async_graphql::Result<Stats> {
+    pub(super) async fn stats(
+        &self,
+        #[graphql(default)] filter: StatsFilter,
+    ) -> async_graphql::Result<Stats> {
         Ok(Stats::new(filter.into_scope()?))
     }
 
     /// Search tracks, episodes and artists by name.
-    async fn search(&self, query: String) -> async_graphql::Result<Search> {
+    pub(super) async fn search(&self, query: String) -> async_graphql::Result<Search> {
         let query = query.trim().to_owned();
         if query.is_empty() {
             return Err("search query is empty".into());
@@ -56,11 +63,15 @@ impl QueryRoot {
         Ok(Search { query })
     }
 
-    async fn item(&self, ctx: &Context<'_>, uri: String) -> async_graphql::Result<Option<Item>> {
+    pub(super) async fn item(
+        &self,
+        ctx: &Context<'_>,
+        uri: String,
+    ) -> async_graphql::Result<Option<Item>> {
         Ok(Item::by_uri(ctx.data::<PgPool>()?, &uri).await?)
     }
 
-    async fn artist(
+    pub(super) async fn artist(
         &self,
         ctx: &Context<'_>,
         name: String,
@@ -73,7 +84,7 @@ impl QueryRoot {
     /// Federation lookup for an `Item` another subgraph references by uri, e.g. home-gateway's
     /// media players.
     #[graphql(entity)]
-    async fn find_item_by_uri(
+    pub(super) async fn find_item_by_uri(
         &self,
         ctx: &Context<'_>,
         uri: String,
@@ -83,7 +94,7 @@ impl QueryRoot {
 
     /// Federation lookup for an `Artist` referenced by name; null when it has no plays.
     #[graphql(entity)]
-    async fn find_artist_by_name(
+    pub(super) async fn find_artist_by_name(
         &self,
         ctx: &Context<'_>,
         name: String,
@@ -94,14 +105,14 @@ impl QueryRoot {
     }
 
     /// Progress of Spotify Web API enrichment (metadata, genres, artwork).
-    async fn enrichment(&self, ctx: &Context<'_>) -> async_graphql::Result<Enrichment> {
+    pub(super) async fn enrichment(&self, ctx: &Context<'_>) -> async_graphql::Result<Enrichment> {
         Ok(insights::enrichment(ctx.data::<PgPool>()?).await?)
     }
 
     /// Whether a file with this sha256 has already been imported for the account, so clients
     /// can skip uploading it.
     #[graphql(inaccessible)]
-    async fn file_exists(
+    pub(super) async fn file_exists(
         &self,
         ctx: &Context<'_>,
         account: String,

@@ -455,10 +455,10 @@ type MusicAge {
 }
 
 type Mutation {
-	createAccount(input: CreateAccountInput!): CreateAccountPayload!
-	createExport(input: CreateExportInput!): CreateExportPayload! @inaccessible
-	uploadExportFile(input: UploadExportFileInput!, file: Upload!): UploadExportFilePayload! @inaccessible
-	finalizeExport(input: FinalizeExportInput!): FinalizeExportPayload! @inaccessible
+	spotifyCreateAccount(input: CreateAccountInput!): CreateAccountPayload!
+	spotifyCreateExport(input: CreateExportInput!): CreateExportPayload! @inaccessible
+	spotifyUploadExportFile(input: UploadExportFileInput!, file: Upload!): UploadExportFilePayload! @inaccessible
+	spotifyFinalizeExport(input: FinalizeExportInput!): FinalizeExportPayload! @inaccessible
 }
 
 """
@@ -545,29 +545,29 @@ type PlayEdge @shareable {
 }
 
 type Query {
-	node(id: ID!): Node
-	nodes(ids: [ID!]!): [Node]!
-	accounts: [Account!]!
-	account(slug: String!): Account
+	spotifyNode(id: ID!): Node
+	spotifyNodes(ids: [ID!]!): [Node]!
+	spotifyAccounts: [Account!]!
+	spotifyAccount(slug: String!): Account
 	"""
 	Listening stats across the filtered plays.
 	"""
-	stats(filter: StatsFilter! = {accounts: [], from: null, to: null, kinds: [TRACK], minMsPlayed: 30000, timeZone: "Australia/Perth"}): Stats!
+	spotifyStats(filter: StatsFilter! = {accounts: [], from: null, to: null, kinds: [TRACK], minMsPlayed: 30000, timeZone: "Australia/Perth"}): Stats!
 	"""
 	Search tracks, episodes and artists by name.
 	"""
-	search(query: String!): Search!
-	item(uri: String!): Item
-	artist(name: String!): Artist
+	spotifySearch(query: String!): Search!
+	spotifyItem(uri: String!): Item
+	spotifyArtist(name: String!): Artist
 	"""
 	Progress of Spotify Web API enrichment (metadata, genres, artwork).
 	"""
-	enrichment: Enrichment!
+	spotifyEnrichment: Enrichment!
 	"""
 	Whether a file with this sha256 has already been imported for the account, so clients
 	can skip uploading it.
 	"""
-	fileExists(account: String!, sha256: String!): Boolean! @inaccessible
+	spotifyFileExists(account: String!, sha256: String!): Boolean! @inaccessible
 }
 
 enum RankBy {

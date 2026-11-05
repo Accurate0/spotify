@@ -1,4 +1,4 @@
-//! The router rejects unauthenticated /graphql requests when auth is enabled. No network:
+//! The router rejects unauthenticated /v1/graphql requests when auth is enabled. No network:
 //! requests without a usable token fail before any key lookup.
 
 use axum::body::Body;
@@ -28,7 +28,7 @@ async fn status(request: Request<Body>) -> StatusCode {
 
 #[tokio::test]
 async fn graphql_requires_a_token() {
-    let request = Request::post("/graphql")
+    let request = Request::post("/v1/graphql")
         .header("content-type", "application/json")
         .body(Body::from(r#"{"query":"{ accounts { slug } }"}"#))
         .unwrap();
@@ -37,7 +37,7 @@ async fn graphql_requires_a_token() {
 
 #[tokio::test]
 async fn malformed_tokens_are_rejected() {
-    let request = Request::post("/graphql")
+    let request = Request::post("/v1/graphql")
         .header("authorization", "Bearer not-a-jwt")
         .body(Body::empty())
         .unwrap();

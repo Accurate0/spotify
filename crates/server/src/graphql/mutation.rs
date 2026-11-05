@@ -74,7 +74,7 @@ pub struct FinalizeExportPayload {
 
 #[Object(name = "Mutation")]
 impl MutationRoot {
-    async fn create_account(
+    pub(super) async fn create_account(
         &self,
         ctx: &Context<'_>,
         input: CreateAccountInput,
@@ -100,7 +100,7 @@ impl MutationRoot {
     }
 
     #[graphql(inaccessible)]
-    async fn create_export(
+    pub(super) async fn create_export(
         &self,
         ctx: &Context<'_>,
         input: CreateExportInput,
@@ -116,7 +116,7 @@ impl MutationRoot {
     }
 
     #[graphql(inaccessible)]
-    async fn upload_export_file(
+    pub(super) async fn upload_export_file(
         &self,
         ctx: &Context<'_>,
         input: UploadExportFileInput,
@@ -175,7 +175,7 @@ impl MutationRoot {
     }
 
     #[graphql(inaccessible)]
-    async fn finalize_export(
+    pub(super) async fn finalize_export(
         &self,
         ctx: &Context<'_>,
         input: FinalizeExportInput,

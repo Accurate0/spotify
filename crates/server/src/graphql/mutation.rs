@@ -99,6 +99,7 @@ impl MutationRoot {
         Ok(CreateAccountPayload { account })
     }
 
+    #[graphql(inaccessible)]
     async fn create_export(
         &self,
         ctx: &Context<'_>,
@@ -114,6 +115,7 @@ impl MutationRoot {
         Ok(CreateExportPayload { export })
     }
 
+    #[graphql(inaccessible)]
     async fn upload_export_file(
         &self,
         ctx: &Context<'_>,
@@ -172,6 +174,7 @@ impl MutationRoot {
         Ok(UploadExportFilePayload { status, file })
     }
 
+    #[graphql(inaccessible)]
     async fn finalize_export(
         &self,
         ctx: &Context<'_>,

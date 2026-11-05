@@ -1,5 +1,5 @@
 use async_graphql::dataloader::DataLoader;
-use async_graphql::{EmptySubscription, Schema, SchemaBuilder};
+use async_graphql::{EmptySubscription, SDLExportOptions, Schema, SchemaBuilder};
 use sqlx::PgPool;
 
 /// Runs a query over `scoped_plays($1..$7)`, binding a `Scope`'s seven filter parameters so each
@@ -50,7 +50,7 @@ pub use query::QueryRoot;
 pub type AppSchema = Schema<QueryRoot, MutationRoot, EmptySubscription>;
 
 pub fn builder() -> SchemaBuilder<QueryRoot, MutationRoot, EmptySubscription> {
-    Schema::build(QueryRoot, MutationRoot, EmptySubscription)
+    Schema::build(QueryRoot, MutationRoot, EmptySubscription).enable_federation()
 }
 
 /// The schema with its data: the pool and batch loaders (uncached, so no stale reads).
@@ -84,6 +84,13 @@ pub fn sdl() -> String {
     builder().finish().sdl()
 }
 
+/// The federation SDL the `graph` router composes, with `@key`s and `@link`.
+pub fn subgraph_sdl() -> String {
+    builder()
+        .finish()
+        .sdl_with_options(SDLExportOptions::new().federation())
+}
+
 #[cfg(test)]
 mod tests {
     /// Keeps the committed `schema.graphql` (read by the CLI's cynic codegen and the web app's
@@ -97,6 +104,19 @@ mod tests {
         if current != sdl {
             std::fs::write(&path, &sdl).expect("write schema.graphql");
             panic!("schema.graphql was out of date and has been regenerated, commit it");
+        }
+    }
+
+    /// Keeps the committed `subgraph.graphql`, which `ortzi graph compose` fetches, in sync.
+    #[test]
+    fn subgraph_is_current() {
+        let sdl = super::subgraph_sdl();
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../subgraph.graphql");
+        let current = std::fs::read_to_string(&path).unwrap_or_default();
+
+        if current != sdl {
+            std::fs::write(&path, &sdl).expect("write subgraph.graphql");
+            panic!("subgraph.graphql was out of date and has been regenerated, commit it");
         }
     }
 }

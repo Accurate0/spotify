@@ -70,6 +70,29 @@ impl QueryRoot {
             .then_some(Artist { name }))
     }
 
+    /// Federation lookup for an `Item` another subgraph references by uri, e.g. home-gateway's
+    /// media players.
+    #[graphql(entity)]
+    async fn find_item_by_uri(
+        &self,
+        ctx: &Context<'_>,
+        uri: String,
+    ) -> async_graphql::Result<Option<Item>> {
+        Ok(Item::by_uri(ctx.data::<PgPool>()?, &uri).await?)
+    }
+
+    /// Federation lookup for an `Artist` referenced by name; null when it has no plays.
+    #[graphql(entity)]
+    async fn find_artist_by_name(
+        &self,
+        ctx: &Context<'_>,
+        name: String,
+    ) -> async_graphql::Result<Option<Artist>> {
+        Ok(Artist::exists(ctx.data::<PgPool>()?, &name)
+            .await?
+            .then_some(Artist { name }))
+    }
+
     /// Progress of Spotify Web API enrichment (metadata, genres, artwork).
     async fn enrichment(&self, ctx: &Context<'_>) -> async_graphql::Result<Enrichment> {
         Ok(insights::enrichment(ctx.data::<PgPool>()?).await?)
@@ -77,6 +100,7 @@ impl QueryRoot {
 
     /// Whether a file with this sha256 has already been imported for the account, so clients
     /// can skip uploading it.
+    #[graphql(inaccessible)]
     async fn file_exists(
         &self,
         ctx: &Context<'_>,

@@ -568,6 +568,8 @@ type Query {
 	can skip uploading it.
 	"""
 	fileExists(account: String!, sha256: String!): Boolean!
+	_service: _Service!
+	_entities(representations: [_Any!]!): [_Entity]!
 }
 
 enum RankBy {
@@ -942,6 +944,18 @@ enum UploadStatus {
 	The file kind is not imported.
 	"""
 	UNSUPPORTED
+}
+
+"""
+The `_Any` scalar is used to pass representations of entities from external
+services into the root `_entities` field for execution.
+"""
+scalar _Any
+
+union _Entity = Artist | Item
+
+type _Service {
+	sdl: String
 }
 
 """

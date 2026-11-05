@@ -29,14 +29,19 @@ pub enum AuthError {
     Http(#[from] reqwest::Error),
 }
 
+/// A GraphQL-shaped JSON body, so a federation router (which rejects non-JSON subgraph
+/// responses) can pass the reason on to the caller.
 impl IntoResponse for AuthError {
     fn into_response(self) -> Response {
-        let status = match &self {
-            Self::Unauthorized(_) => StatusCode::UNAUTHORIZED,
-            Self::Forbidden(_) => StatusCode::FORBIDDEN,
-            Self::Jwks(_) | Self::Http(_) => StatusCode::SERVICE_UNAVAILABLE,
+        let (status, code) = match &self {
+            Self::Unauthorized(_) => (StatusCode::UNAUTHORIZED, "UNAUTHENTICATED"),
+            Self::Forbidden(_) => (StatusCode::FORBIDDEN, "FORBIDDEN"),
+            Self::Jwks(_) | Self::Http(_) => (StatusCode::SERVICE_UNAVAILABLE, "UNAVAILABLE"),
         };
-        (status, self.to_string()).into_response()
+        let body = serde_json::json!({
+            "errors": [{ "message": self.to_string(), "extensions": { "code": code } }]
+        });
+        (status, axum::Json(body)).into_response()
     }
 }
 
@@ -397,6 +402,22 @@ mod tests {
             spotify.userinfo_endpoint,
             "https://idm.example.test/oauth2/openid/spotify/userinfo"
         );
+    }
+
+    #[tokio::test]
+    async fn errors_are_graphql_json() {
+        let response = AuthError::Unauthorized("missing bearer token".to_owned()).into_response();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(response.headers()[header::CONTENT_TYPE], "application/json");
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(
+            body["errors"][0]["message"],
+            "unauthorized: missing bearer token"
+        );
+        assert_eq!(body["errors"][0]["extensions"]["code"], "UNAUTHENTICATED");
     }
 
     #[test]

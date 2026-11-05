@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n               avg(extract(year FROM p.ts AT TIME ZONE $8) - al.release_year)::float8 AS average_years,\n               avg(CASE WHEN extract(year FROM p.ts AT TIME ZONE $8) = al.release_year THEN 1.0\n                        WHEN al.release_year IS NOT NULL THEN 0.0 END)::float8 AS new_share,\n               coalesce(count(al.release_year)::float8 / nullif(count(*), 0), 0) AS \"coverage!\"\n           FROM scoped_plays($1, $2, $3, $4, $5, $6, $7) p\n           LEFT JOIN item_meta m ON m.uri = p.item_uri\n           LEFT JOIN spotify_albums al ON al.id = m.album_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "average_years",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "new_share",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "coverage!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8Array",
+        "Timestamptz",
+        "Timestamptz",
+        "TextArray",
+        "Int4",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "e5e23cee9a07a8773f08cbb821e2bf2ee05c9969f66012c31609fea08a7e8bd5"
+}

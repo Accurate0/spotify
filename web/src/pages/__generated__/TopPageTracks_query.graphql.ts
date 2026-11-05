@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<ac2b62bd99b317a5e94b7a8ae48a01bf>>
+ * @generated SignedSource<<6242ef26af7c46e1b84f082774d32b99>>
  * @lightSyntaxTransform
  */
 
@@ -16,6 +16,7 @@ export type TopPageTracks_query$data = {
         readonly minutesPlayed: number;
         readonly node: {
           readonly artistName: string | null | undefined;
+          readonly artworkUrl: string | null | undefined;
           readonly id: string;
           readonly name: string | null | undefined;
           readonly uri: string;
@@ -184,6 +185,13 @@ return {
                       "alias": null,
                       "args": null,
                       "kind": "ScalarField",
+                      "name": "artworkUrl",
+                      "storageKey": null
+                    },
+                    {
+                      "alias": null,
+                      "args": null,
+                      "kind": "ScalarField",
                       "name": "__typename",
                       "storageKey": null
                     }
@@ -237,6 +245,6 @@ return {
 };
 })();
 
-(node as any).hash = "cfb52510986633cf98ab08c20bad3b51";
+(node as any).hash = "a7be6cf8fbb94630a5a5d21dd4bac769";
 
 export default node;

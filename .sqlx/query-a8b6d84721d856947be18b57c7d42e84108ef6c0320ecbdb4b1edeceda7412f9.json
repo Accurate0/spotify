@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE enrich_runs SET finished_at = now(), api_requests = $2, image_downloads = $3,\n                items_done = $4, artists_done = $5, rate_limited_until = $6, note = $7\n         WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Timestamptz",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a8b6d84721d856947be18b57c7d42e84108ef6c0320ecbdb4b1edeceda7412f9"
+}

@@ -1,0 +1,37 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT kind AS \"kind!\", id AS \"id!\", url AS \"url!\" FROM (\n               SELECT 'albums' AS kind, id, image_source_url AS url, fetched_at\n               FROM spotify_albums WHERE image_source_url IS NOT NULL AND image_key IS NULL\n               UNION ALL\n               SELECT 'artists', id, image_source_url, fetched_at\n               FROM spotify_artists\n               WHERE status = 'ok' AND image_source_url IS NOT NULL AND image_key IS NULL\n           ) pending\n           ORDER BY fetched_at, id\n           LIMIT $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "kind!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "id!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "url!",
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "a642620f2aeb9c21cf1eb3a94bbbc881009666ac0cd4c7bab3c23327086273d8"
+}

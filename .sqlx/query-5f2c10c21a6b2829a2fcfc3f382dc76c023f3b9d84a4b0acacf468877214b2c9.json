@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT target AS \"target!\", id AS \"id!\", kind AS \"kind!\"\n           FROM enrich_queue\n           ORDER BY kind = 'episode', score DESC, id\n           LIMIT $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "target!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "enrich_queue",
+            "name": "target"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "id!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "enrich_queue",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "kind!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "enrich_queue",
+            "name": "kind"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "5f2c10c21a6b2829a2fcfc3f382dc76c023f3b9d84a4b0acacf468877214b2c9"
+}

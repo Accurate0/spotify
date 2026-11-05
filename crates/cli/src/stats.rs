@@ -281,6 +281,38 @@ pub struct TopAlbumsQuery {
     pub stats: TopAlbumsStats,
 }
 
+#[derive(cynic::QueryFragment, Debug)]
+pub struct Genre {
+    pub name: String,
+}
+
+#[derive(cynic::QueryFragment, Debug)]
+pub struct RankedGenreEdge {
+    pub rank: i32,
+    pub plays: i32,
+    pub minutes_played: i32,
+    pub node: Genre,
+}
+
+#[derive(cynic::QueryFragment, Debug)]
+pub struct RankedGenreConnection {
+    pub edges: Vec<RankedGenreEdge>,
+}
+
+#[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "Stats", variables = "RankVariables")]
+pub struct TopGenresStats {
+    #[arguments(first: $first, by: $by)]
+    pub top_genres: RankedGenreConnection,
+}
+
+#[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "Query", variables = "RankVariables")]
+pub struct TopGenresQuery {
+    #[arguments(filter: $filter)]
+    pub stats: TopGenresStats,
+}
+
 #[derive(cynic::QueryVariables)]
 pub struct TimelineVariables {
     pub filter: StatsFilter,
@@ -405,6 +437,7 @@ pub struct PlayConnection {
 #[cynic(graphql_type = "Stats", variables = "ItemVariables")]
 pub struct ItemStats {
     pub summary: Summary,
+    pub completion: crate::insights::Completion,
     pub listening_days: crate::insights::StreakDays,
     #[arguments(first: 1)]
     pub top_days: Vec<crate::insights::PeakDay>,
@@ -419,6 +452,8 @@ pub struct ItemDetail {
     pub name: Option<String>,
     pub artist_name: Option<String>,
     pub album: Option<Album>,
+    pub duration_ms: Option<i32>,
+    pub release_year: Option<i32>,
     #[arguments(filter: $filter)]
     pub stats: ItemStats,
 }
@@ -475,6 +510,8 @@ pub enum TopKind {
     Artists,
     Tracks,
     Albums,
+    /// From Spotify artist genres; needs enrichment.
+    Genres,
 }
 
 pub async fn summary(client: &Client, filter: &FilterArgs) -> anyhow::Result<()> {
@@ -534,6 +571,15 @@ pub async fn top(
                 };
                 (e.rank, e.plays, e.minutes_played, label)
             })
+            .collect(),
+        TopKind::Genres => client
+            .run(TopGenresQuery::build(vars))
+            .await?
+            .stats
+            .top_genres
+            .edges
+            .into_iter()
+            .map(|e| (e.rank, e.plays, e.minutes_played, e.node.name))
             .collect(),
     };
 
@@ -699,6 +745,19 @@ pub async fn track(client: &Client, query: &str, filter: &FilterArgs) -> anyhow:
     }
     println!("{}\n", item.uri);
     print_summary(&item.stats.summary);
+    if let Some(ms) = item.duration_ms {
+        println!("Duration        {}:{:02}", ms / 60_000, ms / 1000 % 60);
+    }
+    if let Some(year) = item.release_year {
+        println!("Released        {year}");
+    }
+    if let Some(average) = item.stats.completion.average {
+        println!(
+            "Completion      {:.0}% on average, {:.0}% of plays finished",
+            average * 100.0,
+            item.stats.completion.finished_share.unwrap_or(0.0) * 100.0
+        );
+    }
     crate::insights::print_firsts(
         None,
         &item.stats.listening_days,

@@ -10,7 +10,7 @@ use sqlx::PgPool;
 
 use super::catalog::{Artist, Item};
 use super::loaders::ItemLoader;
-use super::page::{Page, PlainConnection};
+use super::page::{Page, PlainConnection, RankedConnection};
 use super::stats::{Play, Scope};
 
 #[derive(SimpleObject)]
@@ -90,6 +90,8 @@ pub enum BreakdownDimension {
     StartReason,
     /// Why playback ended.
     EndReason,
+    /// Release decade of the track's album (needs enrichment).
+    Decade,
 }
 
 impl BreakdownDimension {
@@ -101,6 +103,7 @@ impl BreakdownDimension {
             Self::Offline => "offline",
             Self::StartReason => "start",
             Self::EndReason => "end",
+            Self::Decade => "decade",
         }
     }
 }
@@ -448,10 +451,13 @@ pub async fn breakdown(
                       WHEN 'offline' THEN CASE offline WHEN TRUE THEN 'offline' WHEN FALSE THEN 'online' END
                       WHEN 'start' THEN reason_start
                       WHEN 'end' THEN reason_end
+                      WHEN 'decade' THEN (al.release_year / 10 * 10)::text || 's'
                   END AS key,
                   count(*)::int AS "plays!",
                   (sum(ms_played) / 60000)::int AS "minutes!"
-           FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)
+           FROM scoped_plays($1, $2, $3, $4, $5, $6, $7) p
+           LEFT JOIN item_meta m ON m.uri = p.item_uri
+           LEFT JOIN spotify_albums al ON al.id = m.album_id
            GROUP BY 1
            ORDER BY 3 DESC, 1"#,
         by.as_str(),
@@ -463,6 +469,7 @@ pub async fn breakdown(
         .into_iter()
         .map(|r| {
             let label = match (by, r.key.as_deref()) {
+                (BreakdownDimension::Decade, None) => "Unknown yet".to_owned(),
                 (_, None) => "Not recorded".to_owned(),
                 (BreakdownDimension::Shuffle, Some(k)) => format!("Shuffle {k}"),
                 (BreakdownDimension::Offline, Some("offline")) => "Offline".to_owned(),
@@ -610,4 +617,298 @@ pub async fn forgotten_artists(
         minutes_played: r.minutes,
         last_played: r.last_played,
     })))
+}
+
+#[derive(SimpleObject, Clone)]
+pub struct Genre {
+    pub name: String,
+}
+
+pub async fn top_genres(
+    pool: &PgPool,
+    scope: &Scope,
+    by_plays: bool,
+    page: &Page,
+) -> sqlx::Result<RankedConnection<Genre>> {
+    // A play counts toward every genre of its track's primary artist, so genre shares overlap.
+    let rows = scoped!(
+        query!,
+        scope,
+        r#"SELECT g AS "genre!", count(*)::int AS "plays!", (sum(p.ms_played) / 60000)::int AS "minutes!"
+           FROM scoped_plays($1, $2, $3, $4, $5, $6, $7) p
+           JOIN item_artists ia ON ia.item_uri = p.item_uri AND ia.position = 0
+           JOIN spotify_artists sa ON sa.id = ia.artist_id
+           CROSS JOIN LATERAL unnest(sa.genres) AS g
+           GROUP BY g
+           ORDER BY CASE WHEN $8 THEN count(*) ELSE sum(p.ms_played) END DESC, g
+           LIMIT $9 OFFSET $10"#,
+        by_plays,
+        page.fetch(),
+        page.offset,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(page.ranked(
+        rows.into_iter()
+            .map(|r| (Genre { name: r.genre }, r.plays, r.minutes)),
+    ))
+}
+
+#[derive(SimpleObject)]
+pub struct GenrePoint {
+    pub start: DateTime<Utc>,
+    pub minutes_played: i32,
+}
+
+#[derive(SimpleObject)]
+pub struct GenreSeries {
+    pub genre: String,
+    pub points: Vec<GenrePoint>,
+}
+
+/// Listening per bucket for the given genres, or the top `first` genres: in the scope's
+/// date range, or over all time when `top_over_all_time` (so a chart keeps the same genres,
+/// and colours, as the range changes).
+pub async fn genre_timeline(
+    pool: &PgPool,
+    scope: &Scope,
+    bucket: &str,
+    genres: &[String],
+    first: i32,
+    top_over_all_time: bool,
+) -> sqlx::Result<Vec<GenreSeries>> {
+    let genres: Vec<String> = if genres.is_empty() {
+        let page = Page::new(Some(first.clamp(1, 8)), None, 5).expect("valid page");
+        let ranking_scope = if top_over_all_time {
+            scope.clone().all_time()
+        } else {
+            scope.clone()
+        };
+        top_genres(pool, &ranking_scope, false, &page)
+            .await?
+            .edges
+            .into_iter()
+            .map(|e| e.node.name)
+            .collect()
+    } else {
+        genres.to_vec()
+    };
+
+    let rows = scoped!(
+        query!,
+        scope,
+        r#"SELECT g AS "genre!",
+                  date_trunc($8, p.ts AT TIME ZONE $9) AT TIME ZONE $9 AS "start!",
+                  (sum(p.ms_played) / 60000)::int AS "minutes!"
+           FROM scoped_plays($1, $2, $3, $4, $5, $6, $7) p
+           JOIN item_artists ia ON ia.item_uri = p.item_uri AND ia.position = 0
+           JOIN spotify_artists sa ON sa.id = ia.artist_id
+           CROSS JOIN LATERAL unnest(sa.genres) AS g
+           WHERE g = ANY($10)
+           GROUP BY 1, 2
+           ORDER BY 2"#,
+        bucket,
+        scope.time_zone,
+        &genres,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(genres
+        .iter()
+        .map(|genre| GenreSeries {
+            genre: genre.clone(),
+            points: rows
+                .iter()
+                .filter(|r| &r.genre == genre)
+                .map(|r| GenrePoint {
+                    start: r.start,
+                    minutes_played: r.minutes,
+                })
+                .collect(),
+        })
+        .collect())
+}
+
+#[derive(SimpleObject)]
+pub struct MusicAge {
+    /// Average years between a track's release and when you played it.
+    pub average_years: Option<f64>,
+    /// Share of plays of music released the same year it was played.
+    pub new_share: Option<f64>,
+    /// Share of plays with a known release year (grows as enrichment runs).
+    pub coverage: f64,
+    /// The oldest track played in the range.
+    pub oldest: Option<Item>,
+    pub oldest_year: Option<i32>,
+}
+
+pub async fn music_age(pool: &PgPool, scope: &Scope) -> sqlx::Result<MusicAge> {
+    let row = scoped!(
+        query!,
+        scope,
+        r#"SELECT
+               avg(extract(year FROM p.ts AT TIME ZONE $8) - al.release_year)::float8 AS average_years,
+               avg(CASE WHEN extract(year FROM p.ts AT TIME ZONE $8) = al.release_year THEN 1.0
+                        WHEN al.release_year IS NOT NULL THEN 0.0 END)::float8 AS new_share,
+               coalesce(count(al.release_year)::float8 / nullif(count(*), 0), 0) AS "coverage!"
+           FROM scoped_plays($1, $2, $3, $4, $5, $6, $7) p
+           LEFT JOIN item_meta m ON m.uri = p.item_uri
+           LEFT JOIN spotify_albums al ON al.id = m.album_id"#,
+        scope.time_zone,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    let oldest = scoped!(
+        query!,
+        scope,
+        r#"SELECT i.uri, i.kind, i.name, i.artist, i.album, al.release_year AS "year!"
+           FROM scoped_plays($1, $2, $3, $4, $5, $6, $7) p
+           JOIN item_meta m ON m.uri = p.item_uri
+           JOIN spotify_albums al ON al.id = m.album_id
+           JOIN items i ON i.uri = p.item_uri
+           WHERE al.release_year IS NOT NULL
+           ORDER BY al.release_date, i.uri
+           LIMIT 1"#
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(MusicAge {
+        average_years: row.average_years,
+        new_share: row.new_share,
+        coverage: row.coverage,
+        oldest_year: oldest.as_ref().map(|o| o.year),
+        oldest: oldest.map(|o| item(o.uri, o.kind, o.name, o.artist, o.album)),
+    })
+}
+
+#[derive(SimpleObject)]
+pub struct Completion {
+    /// Average share of each track played, capped at 100%.
+    pub average: Option<f64>,
+    /// Share of plays that reached 90% of the track.
+    pub finished_share: Option<f64>,
+    /// Share of plays with a known duration (grows as enrichment runs).
+    pub coverage: f64,
+}
+
+pub async fn completion(pool: &PgPool, scope: &Scope) -> sqlx::Result<Completion> {
+    // Every play counts, whatever the filter's minimum length: skips are the point here.
+    let row = scoped!(
+        query!,
+        scope,
+        r#"SELECT
+               avg(least(p.ms_played::float8 / nullif(m.duration_ms, 0), 1)) AS average,
+               avg(CASE WHEN m.duration_ms > 0
+                        THEN (p.ms_played >= m.duration_ms * 0.9)::int END)::float8 AS finished_share,
+               coalesce(count(m.duration_ms)::float8 / nullif(count(*), 0), 0) AS "coverage!"
+           FROM scoped_plays($1, $2, $3, $4, least($5, 0), $6, $7) p
+           LEFT JOIN item_meta m ON m.uri = p.item_uri AND m.status = 'ok'"#
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(Completion {
+        average: row.average,
+        finished_share: row.finished_share,
+        coverage: row.coverage,
+    })
+}
+
+#[derive(SimpleObject)]
+pub struct AbandonedItem {
+    pub item: Item,
+    pub plays: i32,
+    /// Average share of the track played.
+    pub average_completion: f64,
+}
+
+pub async fn most_abandoned(
+    pool: &PgPool,
+    scope: &Scope,
+    first: i32,
+    min_plays: i32,
+) -> sqlx::Result<Vec<AbandonedItem>> {
+    let rows = scoped!(
+        query!,
+        scope,
+        r#"SELECT i.uri, i.kind, i.name, i.artist, i.album, count(*)::int AS "plays!",
+                  avg(least(p.ms_played::float8 / m.duration_ms, 1)) AS "completion!"
+           FROM scoped_plays($1, $2, $3, $4, least($5, 0), $6, $7) p
+           JOIN item_meta m ON m.uri = p.item_uri AND m.status = 'ok' AND m.duration_ms > 0
+           JOIN items i ON i.uri = p.item_uri
+           GROUP BY i.uri
+           HAVING count(*) >= $8
+           ORDER BY 7, count(*) DESC, i.uri
+           LIMIT $9"#,
+        min_plays.max(1) as i64,
+        first.clamp(1, 100) as i64,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| AbandonedItem {
+            item: item(r.uri, r.kind, r.name, r.artist, r.album),
+            plays: r.plays,
+            average_completion: r.completion,
+        })
+        .collect())
+}
+
+#[derive(SimpleObject)]
+pub struct Enrichment {
+    pub tracks_enriched: i32,
+    pub tracks_pending: i32,
+    /// Tracks Spotify no longer has.
+    pub tracks_missing: i32,
+    pub artists_enriched: i32,
+    pub artists_pending: i32,
+    pub artwork_stored: i32,
+    /// Share of all listening time on enriched items.
+    pub listening_coverage: f64,
+    #[graphql(name = "requestsLast24h")]
+    pub requests_last_24h: i32,
+    pub last_run: Option<DateTime<Utc>>,
+    pub rate_limited_until: Option<DateTime<Utc>>,
+}
+
+pub async fn enrichment(pool: &PgPool) -> sqlx::Result<Enrichment> {
+    let row = sqlx::query!(
+        r#"SELECT
+               (SELECT count(*)::int FROM item_meta WHERE status = 'ok') AS "tracks_enriched!",
+               (SELECT count(*)::int FROM item_meta WHERE status = 'not_found') AS "tracks_missing!",
+               (SELECT count(*)::int FROM enrich_queue WHERE target = 'item') AS "tracks_pending!",
+               (SELECT count(*)::int FROM spotify_artists WHERE status = 'ok') AS "artists_enriched!",
+               (SELECT count(*)::int FROM enrich_queue WHERE target = 'artist') AS "artists_pending!",
+               ((SELECT count(*) FROM spotify_albums WHERE image_key IS NOT NULL)
+                 + (SELECT count(*) FROM spotify_artists WHERE image_key IS NOT NULL))::int AS "artwork!",
+               (SELECT coalesce(sum(p.ms_played) FILTER (WHERE m.uri IS NOT NULL)::float8
+                                / nullif(sum(p.ms_played), 0), 0)
+                FROM plays p LEFT JOIN item_meta m ON m.uri = p.item_uri AND m.status = 'ok') AS "coverage!",
+               (SELECT coalesce(sum(api_requests), 0)::int FROM enrich_runs
+                WHERE started_at > now() - interval '24 hours') AS "requests!",
+               (SELECT max(started_at) FROM enrich_runs) AS last_run,
+               (SELECT max(rate_limited_until) FROM enrich_runs WHERE rate_limited_until > now())
+                   AS rate_limited_until"#
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(Enrichment {
+        tracks_enriched: row.tracks_enriched,
+        tracks_pending: row.tracks_pending,
+        tracks_missing: row.tracks_missing,
+        artists_enriched: row.artists_enriched,
+        artists_pending: row.artists_pending,
+        artwork_stored: row.artwork,
+        listening_coverage: row.coverage,
+        requests_last_24h: row.requests,
+        last_run: row.last_run,
+        rate_limited_until: row.rate_limited_until,
+    })
 }

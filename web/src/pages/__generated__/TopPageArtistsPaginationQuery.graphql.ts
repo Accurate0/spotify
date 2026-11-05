@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<621ed1c77c4d453d91b406ab0c6b4d8f>>
+ * @generated SignedSource<<935e87e156f7ebc42727ad4b89b6942a>>
  * @lightSyntaxTransform
  */
 
@@ -181,6 +181,13 @@ return {
                         "alias": null,
                         "args": null,
                         "kind": "ScalarField",
+                        "name": "imageUrl",
+                        "storageKey": null
+                      },
+                      {
+                        "alias": null,
+                        "args": null,
+                        "kind": "ScalarField",
                         "name": "__typename",
                         "storageKey": null
                       }
@@ -242,16 +249,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "7bd472c1e54a4075f77bb03e2e1880ba",
+    "cacheID": "f18c8bb12321ce5076bd9c942ff046ba",
     "id": null,
     "metadata": {},
     "name": "TopPageArtistsPaginationQuery",
     "operationKind": "query",
-    "text": "query TopPageArtistsPaginationQuery(\n  $after: String\n  $by: RankBy!\n  $filter: StatsFilter!\n  $first: Int = 50\n) {\n  ...TopPageArtists_query_19NMb\n}\n\nfragment TopPageArtists_query_19NMb on Query {\n  stats(filter: $filter) {\n    topArtists(first: $first, after: $after, by: $by) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          name\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
+    "text": "query TopPageArtistsPaginationQuery(\n  $after: String\n  $by: RankBy!\n  $filter: StatsFilter!\n  $first: Int = 50\n) {\n  ...TopPageArtists_query_19NMb\n}\n\nfragment TopPageArtists_query_19NMb on Query {\n  stats(filter: $filter) {\n    topArtists(first: $first, after: $after, by: $by) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          name\n          imageUrl\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "cb30ece6599ecc8d37aeb6a029bc367e";
+(node as any).hash = "c327260ae778faf37910d8384b1267e5";
 
 export default node;

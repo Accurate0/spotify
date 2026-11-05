@@ -7,6 +7,7 @@ import type { TopPageTracksQuery } from "./__generated__/TopPageTracksQuery.grap
 import type { TopPageTracks_query$key } from "./__generated__/TopPageTracks_query.graphql";
 import type { TopPageAlbumsQuery } from "./__generated__/TopPageAlbumsQuery.graphql";
 import type { TopPageAlbums_query$key } from "./__generated__/TopPageAlbums_query.graphql";
+import Artwork from "@/components/Artwork";
 import RankRow, { type RankBy } from "@/components/RankRow";
 import { useFilter } from "@/lib/filter";
 import { artistPath, itemPath } from "@/lib/paths";
@@ -78,6 +79,7 @@ function TopArtists({ by }: { by: RankBy }) {
               node {
                 id
                 name
+                imageUrl
               }
             }
           }
@@ -95,6 +97,7 @@ function TopArtists({ by }: { by: RankBy }) {
         <RankRow
           key={e.node.id}
           rank={e.rank}
+          image={<Artwork url={e.node.imageUrl} alt={e.node.name} round />}
           title={<Link to={artistPath(e.node.name)} className="hover:underline">{e.node.name}</Link>}
           minutes={e.minutesPlayed}
           plays={e.plays}
@@ -138,6 +141,7 @@ function TopTracks({ by }: { by: RankBy }) {
                 uri
                 name
                 artistName
+                artworkUrl
               }
             }
           }
@@ -155,6 +159,7 @@ function TopTracks({ by }: { by: RankBy }) {
         <RankRow
           key={e.node.id}
           rank={e.rank}
+          image={<Artwork url={e.node.artworkUrl} alt={e.node.name ?? ""} />}
           title={<Link to={itemPath(e.node.uri)} className="hover:underline">{e.node.name ?? e.node.uri}</Link>}
           subtitle={
             e.node.artistName && (
@@ -200,6 +205,7 @@ function TopAlbums({ by }: { by: RankBy }) {
               minutesPlayed
               node {
                 name
+                artworkUrl
                 artist {
                   name
                 }
@@ -220,6 +226,7 @@ function TopAlbums({ by }: { by: RankBy }) {
         <RankRow
           key={`${e.node.artist?.name}\u001f${e.node.name}`}
           rank={e.rank}
+          image={<Artwork url={e.node.artworkUrl} alt={e.node.name} />}
           title={e.node.name}
           subtitle={
             e.node.artist && (

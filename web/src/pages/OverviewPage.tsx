@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import StatTiles from "@/components/StatTiles";
 import TimelineChart, { type Bucket } from "@/components/TimelineChart";
 import Heatmap from "@/components/Heatmap";
+import Artwork from "@/components/Artwork";
 import RankRow from "@/components/RankRow";
 import { useFilter } from "@/lib/filter";
 import { artistPath, itemPath } from "@/lib/paths";
@@ -41,6 +42,7 @@ export default function OverviewPage() {
               node {
                 id
                 name
+                imageUrl
               }
             }
           }
@@ -54,6 +56,7 @@ export default function OverviewPage() {
                 uri
                 name
                 artistName
+                artworkUrl
               }
             }
           }
@@ -95,6 +98,7 @@ export default function OverviewPage() {
                 <RankRow
                   key={e.node.id}
                   rank={e.rank}
+                  image={<Artwork url={e.node.imageUrl} alt={e.node.name} round />}
                   title={<Link to={artistPath(e.node.name)} className="hover:underline">{e.node.name}</Link>}
                   minutes={e.minutesPlayed}
                   plays={e.plays}
@@ -119,6 +123,7 @@ export default function OverviewPage() {
                 <RankRow
                   key={e.node.id}
                   rank={e.rank}
+                  image={<Artwork url={e.node.artworkUrl} alt={e.node.name ?? ""} />}
                   title={<Link to={itemPath(e.node.uri)} className="hover:underline">{e.node.name ?? e.node.uri}</Link>}
                   subtitle={e.node.artistName}
                   minutes={e.minutesPlayed}

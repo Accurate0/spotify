@@ -2,6 +2,7 @@ use async_graphql::{Context, ID, Object};
 use sqlx::PgPool;
 
 use super::catalog::{Artist, Item, Search};
+use super::insights::{self, Enrichment};
 use super::node::{Node, NodeType, decode};
 use super::objects::{Account, Export, ExportFile};
 use super::stats::{Stats, StatsFilter};
@@ -67,6 +68,11 @@ impl QueryRoot {
         Ok(Artist::exists(ctx.data::<PgPool>()?, &name)
             .await?
             .then_some(Artist { name }))
+    }
+
+    /// Progress of Spotify Web API enrichment (metadata, genres, artwork).
+    async fn enrichment(&self, ctx: &Context<'_>) -> async_graphql::Result<Enrichment> {
+        Ok(insights::enrichment(ctx.data::<PgPool>()?).await?)
     }
 
     /// Whether a file with this sha256 has already been imported for the account, so clients

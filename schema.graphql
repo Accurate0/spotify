@@ -1,3 +1,12 @@
+type AbandonedItem {
+	item: Item!
+	plays: Int!
+	"""
+	Average share of the track played.
+	"""
+	averageCompletion: Float!
+}
+
 type Account implements Node {
 	id: ID!
 	slug: String!
@@ -10,12 +19,19 @@ type Account implements Node {
 type Album {
 	name: String!
 	artist: Artist
+	artworkUrl: String
+	releaseYear: Int
 }
 
 type Artist implements Node {
 	id: ID!
 	name: String!
 	stats(filter: StatsFilter! = {accounts: [], from: null, to: null, kinds: [TRACK], minMsPlayed: 30000, timeZone: "Australia/Perth"}): Stats!
+	"""
+	Spotify's genres for this artist; empty until enriched.
+	"""
+	genres: [String!]!
+	imageUrl: String
 }
 
 type ArtistConnection {
@@ -80,6 +96,10 @@ enum BreakdownDimension {
 	Why playback ended.
 	"""
 	END_REASON
+	"""
+	Release decade of the track's album (needs enrichment).
+	"""
+	DECADE
 }
 
 type BreakdownRow {
@@ -93,6 +113,21 @@ type BreakdownRow {
 	label: String!
 	plays: Int!
 	minutesPlayed: Int!
+}
+
+type Completion {
+	"""
+	Average share of each track played, capped at 100%.
+	"""
+	average: Float
+	"""
+	Share of plays that reached 90% of the track.
+	"""
+	finishedShare: Float
+	"""
+	Share of plays with a known duration (grows as enrichment runs).
+	"""
+	coverage: Float!
 }
 
 input CreateAccountInput {
@@ -189,6 +224,25 @@ type DiscoveryEdge {
 	cursor: String!
 }
 
+type Enrichment {
+	tracksEnriched: Int!
+	tracksPending: Int!
+	"""
+	Tracks Spotify no longer has.
+	"""
+	tracksMissing: Int!
+	artistsEnriched: Int!
+	artistsPending: Int!
+	artworkStored: Int!
+	"""
+	Share of all listening time on enriched items.
+	"""
+	listeningCoverage: Float!
+	requestsLast24h: Int!
+	lastRun: DateTime
+	rateLimitedUntil: DateTime
+}
+
 type Export implements Node {
 	id: ID!
 	label: String!
@@ -269,6 +323,20 @@ type ForgottenArtistEdge {
 	cursor: String!
 }
 
+type Genre {
+	name: String!
+}
+
+type GenrePoint {
+	start: DateTime!
+	minutesPlayed: Int!
+}
+
+type GenreSeries {
+	genre: String!
+	points: [GenrePoint!]!
+}
+
 type HeatmapCell {
 	"""
 	ISO day of week: 1 is Monday, 7 is Sunday.
@@ -290,6 +358,25 @@ type Item implements Node {
 	artistName: String
 	artist: Artist
 	album: Album
+	"""
+	Album (or podcast show) artwork, once enrichment has stored it.
+	"""
+	artworkUrl: String
+	"""
+	Whether Spotify Web API metadata has been fetched for this item.
+	"""
+	enriched: Boolean!
+	durationMs: Int
+	explicit: Boolean
+	"""
+	`1999`, `1999-03` or `1999-03-14`, as precise as Spotify knows it.
+	"""
+	releaseDate: String
+	releaseYear: Int
+	"""
+	Every credited artist in credit order; empty until enriched.
+	"""
+	artists: [Artist!]!
 	stats(filter: StatsFilter! = {accounts: [], from: null, to: null, kinds: [TRACK], minMsPlayed: 30000, timeZone: "Australia/Perth"}): Stats!
 }
 
@@ -345,6 +432,26 @@ type ListeningDays {
 	The run ending on the last active day.
 	"""
 	latestStreak: Streak
+}
+
+type MusicAge {
+	"""
+	Average years between a track's release and when you played it.
+	"""
+	averageYears: Float
+	"""
+	Share of plays of music released the same year it was played.
+	"""
+	newShare: Float
+	"""
+	Share of plays with a known release year (grows as enrichment runs).
+	"""
+	coverage: Float!
+	"""
+	The oldest track played in the range.
+	"""
+	oldest: Item
+	oldestYear: Int
 }
 
 type Mutation {
@@ -453,6 +560,10 @@ type Query {
 	item(uri: String!): Item
 	artist(name: String!): Artist
 	"""
+	Progress of Spotify Web API enrichment (metadata, genres, artwork).
+	"""
+	enrichment: Enrichment!
+	"""
 	Whether a file with this sha256 has already been imported for the account, so clients
 	can skip uploading it.
 	"""
@@ -522,6 +633,41 @@ type RankedArtistEdge {
 	The item at the end of the edge
 	"""
 	node: Artist!
+	"""
+	1-based position in the ranking.
+	"""
+	rank: Int!
+	plays: Int!
+	minutesPlayed: Int!
+	"""
+	A cursor for use in pagination
+	"""
+	cursor: String!
+}
+
+type RankedGenreConnection {
+	"""
+	Information to aid in pagination.
+	"""
+	pageInfo: PageInfo!
+	"""
+	A list of edges.
+	"""
+	edges: [RankedGenreEdge!]!
+	"""
+	A list of nodes.
+	"""
+	nodes: [Genre!]!
+}
+
+"""
+An edge in a connection.
+"""
+type RankedGenreEdge {
+	"""
+	The item at the end of the edge
+	"""
+	node: Genre!
 	"""
 	1-based position in the ranking.
 	"""
@@ -676,6 +822,29 @@ type Stats {
 	Artists with heavy listening but nothing in the last year of the range.
 	"""
 	forgottenArtists(first: Int, after: String): ForgottenArtistConnection!
+	"""
+	Genres by listening, from the Spotify genres of each track's primary artist. A play
+	counts toward every genre of that artist, so shares overlap. Needs enrichment.
+	"""
+	topGenres(first: Int, after: String, by: RankBy! = MINUTES_PLAYED): RankedGenreConnection!
+	"""
+	Listening over time for `genres`, or the top `first` genres when none are given,
+	chosen over all time by default so they stay stable as the date range changes.
+	"""
+	genreTimeline(bucket: TimeBucket!, genres: [String!]! = [], first: Int! = 5, topOverAllTime: Boolean! = true): [GenreSeries!]!
+	"""
+	How old the music is when you play it. Needs enrichment.
+	"""
+	musicAge: MusicAge!
+	"""
+	How much of each track you play, from Spotify durations. Counts every play, whatever
+	the filter's minimum play length.
+	"""
+	completion: Completion!
+	"""
+	Tracks with the lowest average completion among those with at least `minPlays` plays.
+	"""
+	mostAbandoned(first: Int! = 10, minPlays: Int! = 10): [AbandonedItem!]!
 }
 
 input StatsFilter {

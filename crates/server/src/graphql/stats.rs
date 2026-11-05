@@ -8,8 +8,9 @@ use sqlx::PgPool;
 
 use super::catalog::{Album, Artist, Item};
 use super::insights::{
-    self, ArtistSkipRate, BreakdownDimension, BreakdownRow, DayStat, Discovery, ForgottenArtist,
-    ListeningDays, RepeatDay, Sessions, SkipOrder, SkippedItem,
+    self, AbandonedItem, ArtistSkipRate, BreakdownDimension, BreakdownRow, Completion, DayStat,
+    Discovery, ForgottenArtist, Genre, GenreSeries, ListeningDays, MusicAge, RepeatDay, Sessions,
+    SkipOrder, SkippedItem,
 };
 use super::loaders::{AccountLoader, ItemLoader};
 use super::node::{NodeType, decode_row_id};
@@ -99,6 +100,13 @@ impl Scope {
         self
     }
 
+    /// The same filter without its date range.
+    pub fn all_time(mut self) -> Self {
+        self.from = None;
+        self.to = None;
+        self
+    }
+
     pub fn artist(mut self, name: &str) -> Self {
         self.artist = Some(name.to_owned());
         self
@@ -121,7 +129,7 @@ pub enum TimeBucket {
 }
 
 impl TimeBucket {
-    fn as_str(self) -> &'static str {
+    pub fn as_str(self) -> &'static str {
         match self {
             Self::Day => "day",
             Self::Week => "week",
@@ -350,12 +358,15 @@ impl Stats {
         let rows = scoped!(
             query!,
             self.scope,
-            r#"SELECT album AS "album!", artist, count(*)::int AS "plays!",
-                      (sum(ms_played) / 60000)::int AS "minutes!"
-               FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)
-               WHERE album IS NOT NULL
-               GROUP BY album, artist
-               ORDER BY CASE WHEN $8 THEN count(*) ELSE sum(ms_played) END DESC, album, artist
+            r#"SELECT p.album AS "album!", p.artist, count(*)::int AS "plays!",
+                      (sum(p.ms_played) / 60000)::int AS "minutes!",
+                      max(a.image_key) AS artwork_key, max(a.release_year) AS release_year
+               FROM scoped_plays($1, $2, $3, $4, $5, $6, $7) p
+               LEFT JOIN item_meta m ON m.uri = p.item_uri
+               LEFT JOIN spotify_albums a ON a.id = m.album_id
+               WHERE p.album IS NOT NULL
+               GROUP BY p.album, p.artist
+               ORDER BY CASE WHEN $8 THEN count(*) ELSE sum(p.ms_played) END DESC, p.album, p.artist
                LIMIT $9 OFFSET $10"#,
             by == RankBy::Plays,
             page.fetch(),
@@ -368,6 +379,8 @@ impl Stats {
             let album = Album {
                 name: r.album,
                 artist: r.artist,
+                artwork_key: r.artwork_key,
+                release_year: r.release_year,
             };
             (album, r.plays, r.minutes)
         })))
@@ -550,5 +563,66 @@ impl Stats {
     ) -> async_graphql::Result<PlainConnection<ForgottenArtist>> {
         let page = Page::new(first, after, 10)?;
         Ok(insights::forgotten_artists(ctx.data::<PgPool>()?, &self.scope, &page).await?)
+    }
+
+    /// Genres by listening, from the Spotify genres of each track's primary artist. A play
+    /// counts toward every genre of that artist, so shares overlap. Needs enrichment.
+    async fn top_genres(
+        &self,
+        ctx: &Context<'_>,
+        first: Option<i32>,
+        after: Option<String>,
+        #[graphql(default)] by: RankBy,
+    ) -> async_graphql::Result<RankedConnection<Genre>> {
+        let page = Page::new(first, after, 10)?;
+        Ok(insights::top_genres(
+            ctx.data::<PgPool>()?,
+            &self.scope,
+            by == RankBy::Plays,
+            &page,
+        )
+        .await?)
+    }
+
+    /// Listening over time for `genres`, or the top `first` genres when none are given,
+    /// chosen over all time by default so they stay stable as the date range changes.
+    async fn genre_timeline(
+        &self,
+        ctx: &Context<'_>,
+        bucket: TimeBucket,
+        #[graphql(default)] genres: Vec<String>,
+        #[graphql(default = 5)] first: i32,
+        #[graphql(default = true)] top_over_all_time: bool,
+    ) -> async_graphql::Result<Vec<GenreSeries>> {
+        Ok(insights::genre_timeline(
+            ctx.data::<PgPool>()?,
+            &self.scope,
+            bucket.as_str(),
+            &genres,
+            first,
+            top_over_all_time,
+        )
+        .await?)
+    }
+
+    /// How old the music is when you play it. Needs enrichment.
+    async fn music_age(&self, ctx: &Context<'_>) -> async_graphql::Result<MusicAge> {
+        Ok(insights::music_age(ctx.data::<PgPool>()?, &self.scope).await?)
+    }
+
+    /// How much of each track you play, from Spotify durations. Counts every play, whatever
+    /// the filter's minimum play length.
+    async fn completion(&self, ctx: &Context<'_>) -> async_graphql::Result<Completion> {
+        Ok(insights::completion(ctx.data::<PgPool>()?, &self.scope).await?)
+    }
+
+    /// Tracks with the lowest average completion among those with at least `minPlays` plays.
+    async fn most_abandoned(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(default = 10)] first: i32,
+        #[graphql(default = 10)] min_plays: i32,
+    ) -> async_graphql::Result<Vec<AbandonedItem>> {
+        Ok(insights::most_abandoned(ctx.data::<PgPool>()?, &self.scope, first, min_plays).await?)
     }
 }

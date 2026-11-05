@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<c311f709a34e9d1a4893c04f143fee2f>>
+ * @generated SignedSource<<ca3febb7897bb27c6a6fe26cb10677cd>>
  * @lightSyntaxTransform
  */
 
@@ -178,6 +178,13 @@ return {
                         "alias": null,
                         "args": null,
                         "kind": "ScalarField",
+                        "name": "artworkUrl",
+                        "storageKey": null
+                      },
+                      {
+                        "alias": null,
+                        "args": null,
+                        "kind": "ScalarField",
                         "name": "__typename",
                         "storageKey": null
                       }
@@ -239,12 +246,12 @@ return {
     ]
   },
   "params": {
-    "cacheID": "563b7e1ca35a79d92c3b4491e4998106",
+    "cacheID": "b89552d8f5e2e7868d34f2e38342ade2",
     "id": null,
     "metadata": {},
     "name": "TopPageTracksQuery",
     "operationKind": "query",
-    "text": "query TopPageTracksQuery(\n  $filter: StatsFilter!\n  $by: RankBy!\n) {\n  ...TopPageTracks_query_9zxt2\n}\n\nfragment TopPageTracks_query_9zxt2 on Query {\n  stats(filter: $filter) {\n    topItems(first: 50, by: $by) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          uri\n          name\n          artistName\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
+    "text": "query TopPageTracksQuery(\n  $filter: StatsFilter!\n  $by: RankBy!\n) {\n  ...TopPageTracks_query_9zxt2\n}\n\nfragment TopPageTracks_query_9zxt2 on Query {\n  stats(filter: $filter) {\n    topItems(first: 50, by: $by) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          uri\n          name\n          artistName\n          artworkUrl\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
   }
 };
 })();

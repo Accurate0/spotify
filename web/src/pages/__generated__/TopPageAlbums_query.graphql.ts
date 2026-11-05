@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<65940c4185a22236556b46d038b5f6fd>>
+ * @generated SignedSource<<3f310664cb9d98abdb3e0ac245801de1>>
  * @lightSyntaxTransform
  */
 
@@ -18,6 +18,7 @@ export type TopPageAlbums_query$data = {
           readonly artist: {
             readonly name: string;
           } | null | undefined;
+          readonly artworkUrl: string | null | undefined;
           readonly name: string;
         };
         readonly plays: number;
@@ -163,6 +164,13 @@ return {
                     {
                       "alias": null,
                       "args": null,
+                      "kind": "ScalarField",
+                      "name": "artworkUrl",
+                      "storageKey": null
+                    },
+                    {
+                      "alias": null,
+                      "args": null,
                       "concreteType": "Artist",
                       "kind": "LinkedField",
                       "name": "artist",
@@ -229,6 +237,6 @@ return {
 };
 })();
 
-(node as any).hash = "7a8bd069db5e84983ad690ad5044cd20";
+(node as any).hash = "13924e27129981118d26a3209b44c1d7";
 
 export default node;

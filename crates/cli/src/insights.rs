@@ -131,6 +131,65 @@ pub enum BreakdownDimension {
     Offline,
     StartReason,
     EndReason,
+    Decade,
+}
+
+#[derive(cynic::QueryFragment, Debug)]
+pub struct Completion {
+    pub average: Option<f64>,
+    pub finished_share: Option<f64>,
+}
+
+#[derive(cynic::QueryFragment, Debug)]
+pub struct Enrichment {
+    pub tracks_enriched: i32,
+    pub tracks_pending: i32,
+    pub tracks_missing: i32,
+    pub artists_enriched: i32,
+    pub artists_pending: i32,
+    pub artwork_stored: i32,
+    pub listening_coverage: f64,
+    pub requests_last_24h: i32,
+    pub last_run: Option<DateTime<Utc>>,
+    pub rate_limited_until: Option<DateTime<Utc>>,
+}
+
+#[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "Query")]
+pub struct EnrichmentQuery {
+    pub enrichment: Enrichment,
+}
+
+/// Progress of the Spotify Web API backfill.
+pub async fn enrichment(client: &Client, tz: Tz) -> anyhow::Result<()> {
+    let e = client.run(EnrichmentQuery::build(())).await?.enrichment;
+    println!(
+        "Tracks     {} enriched, {} pending, {} no longer on Spotify",
+        e.tracks_enriched, e.tracks_pending, e.tracks_missing
+    );
+    println!(
+        "Artists    {} enriched, {} pending",
+        e.artists_enriched, e.artists_pending
+    );
+    println!("Artwork    {} images stored", e.artwork_stored);
+    println!(
+        "Coverage   {:.1}% of listening time",
+        e.listening_coverage * 100.0
+    );
+    println!("Requests   {} in the last 24h", e.requests_last_24h);
+    if let Some(last) = e.last_run {
+        println!(
+            "Last run   {}",
+            last.with_timezone(&tz).format("%Y-%m-%d %H:%M")
+        );
+    }
+    if let Some(until) = e.rate_limited_until {
+        println!(
+            "Paused     rate limited until {}",
+            until.with_timezone(&tz).format("%Y-%m-%d %H:%M")
+        );
+    }
+    Ok(())
 }
 
 #[derive(cynic::QueryVariables)]

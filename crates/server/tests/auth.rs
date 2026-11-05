@@ -17,7 +17,7 @@ fn app() -> axum::Router {
         audience: "spotify".to_owned(),
         groups: vec!["spotify_users".to_owned()],
     });
-    spotify_server::router(pool, Some(auth))
+    spotify_server::router(pool, Some(auth), None)
 }
 
 async fn status(request: Request<Body>) -> StatusCode {

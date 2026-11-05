@@ -59,3 +59,20 @@ the API + SPA behind one route (`/graphql`, `/health` → `spotify-api`; `/` →
 - The CLI is published to the ortzi registry by `.forgejo/workflows/publish-cli-spotify.yaml`
   (bump `version` in `ortzi.yaml`); install with `ortzi install spotify`, then
   `ortzi spotify import <dir> --account <slug>`.
+
+## Spotify Web API enrichment
+
+`spotify-server enrich` fills in durations, release dates, credited artists, genres and
+artwork (stored in the Garage bucket, served at `/art/...`), most-listened first. In
+production it runs every 15 minutes as the `spotify-enrich` CronJob. The app is in Spotify's
+Development Mode (one request per item, no batch endpoints), so it is deliberately slow:
+
+- 4s between requests, at most 180 per run and 5,000 per rolling 24h
+- a 429 with a long `Retry-After` pauses every run until then
+- tracks Spotify no longer has are marked and never retried
+
+```sh
+spotify-server enrich --dry-run    # budget and the next items, no API calls
+SPOTIFY_CLIENT_ID=… SPOTIFY_CLIENT_SECRET=… spotify-server enrich --max-requests-per-run 10
+spotify enrichment                 # progress from the CLI
+```

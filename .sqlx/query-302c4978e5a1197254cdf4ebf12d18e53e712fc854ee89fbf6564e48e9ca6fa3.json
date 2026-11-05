@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE spotify_albums SET image_source_url = NULL WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "302c4978e5a1197254cdf4ebf12d18e53e712fc854ee89fbf6564e48e9ca6fa3"
+}

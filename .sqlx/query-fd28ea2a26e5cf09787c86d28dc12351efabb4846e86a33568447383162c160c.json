@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT artist_id FROM item_artists WHERE item_uri = 'spotify:track:t2' ORDER BY position",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "artist_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "item_artists",
+            "name": "artist_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "fd28ea2a26e5cf09787c86d28dc12351efabb4846e86a33568447383162c160c"
+}

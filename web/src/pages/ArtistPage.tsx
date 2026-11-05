@@ -7,6 +7,7 @@ import StatTiles from "@/components/StatTiles";
 import Firsts from "@/components/Firsts";
 import TimelineChart from "@/components/TimelineChart";
 import RankRow from "@/components/RankRow";
+import Artwork from "@/components/Artwork";
 import { useFilter } from "@/lib/filter";
 import { itemPath } from "@/lib/paths";
 
@@ -30,6 +31,7 @@ function ArtistTracks({ artist }: { artist: ArtistPageTracks_artist$key }) {
                 id
                 uri
                 name
+                artworkUrl
                 album {
                   name
                 }
@@ -52,6 +54,7 @@ function ArtistTracks({ artist }: { artist: ArtistPageTracks_artist$key }) {
           <RankRow
             key={e.node.id}
             rank={e.rank}
+            image={<Artwork url={e.node.artworkUrl} alt={e.node.album?.name ?? e.node.name ?? ""} />}
             title={<Link to={itemPath(e.node.uri)} className="hover:underline">{e.node.name ?? e.node.uri}</Link>}
             subtitle={e.node.album?.name}
             minutes={e.minutesPlayed}
@@ -84,6 +87,8 @@ export default function ArtistPage() {
       query ArtistPageQuery($name: String!, $filter: StatsFilter!) {
         artist(name: $name) {
           name
+          imageUrl
+          genres
           stats(filter: $filter) {
             summary {
               ...StatTiles_summary
@@ -107,9 +112,21 @@ export default function ArtistPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <p className="text-muted-foreground text-sm">Artist</p>
-        <h2 className="font-display text-3xl font-semibold tracking-tight">{artist.name}</h2>
+      <header className="flex flex-col gap-5 sm:flex-row sm:items-end">
+        <Artwork url={artist.imageUrl} alt={artist.name} size="lg" round />
+        <div className="min-w-0">
+          <p className="text-muted-foreground text-sm">Artist</p>
+          <h2 className="font-display text-3xl font-semibold tracking-tight">{artist.name}</h2>
+          {artist.genres.length > 0 && (
+            <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Genres">
+              {artist.genres.map((g) => (
+                <li key={g} className="bg-muted text-muted-foreground rounded-full px-2.5 py-0.5 text-xs">
+                  {g}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </header>
 
       <StatTiles summary={artist.stats.summary} scope="artist" />

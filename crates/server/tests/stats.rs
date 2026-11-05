@@ -452,3 +452,148 @@ async fn artist_skip_rate_leaderboard(pool: PgPool) {
     );
     assert_eq!(stats["busy"], json!([{"artist": {"name": "Alpha"}}]));
 }
+
+/// Spotify metadata as `spotify-server enrich` would store it: Alpha's tracks are on a 1999
+/// album (with artwork), Beta's on a 2024 one.
+async fn seed_enrichment(pool: &PgPool) {
+    sqlx::query!(
+        "INSERT INTO spotify_albums (id, name, album_type, release_date, release_year, image_key)
+         VALUES ('al_a', 'Alpha album', 'album', '1999-03-14', 1999, 'albums/al_a.jpg'),
+                ('al_b', 'Beta album', 'album', '2024', 2024, NULL)"
+    )
+    .execute(pool)
+    .await
+    .unwrap();
+    sqlx::query!(
+        "INSERT INTO item_meta (uri, duration_ms, explicit, album_id, status)
+         VALUES ('spotify:track:a1', 200000, false, 'al_a', 'ok'),
+                ('spotify:track:a2', 240000, true, 'al_a', 'ok'),
+                ('spotify:track:b1', 240000, false, 'al_b', 'ok')"
+    )
+    .execute(pool)
+    .await
+    .unwrap();
+    sqlx::query!(
+        "INSERT INTO item_artists (item_uri, position, artist_id, artist_name)
+         VALUES ('spotify:track:a1', 0, 'ar_alpha', 'Alpha'),
+                ('spotify:track:a2', 0, 'ar_alpha', 'Alpha'),
+                ('spotify:track:a2', 1, 'ar_guest', 'Guest'),
+                ('spotify:track:b1', 0, 'ar_beta', 'Beta')"
+    )
+    .execute(pool)
+    .await
+    .unwrap();
+    sqlx::query!(
+        "INSERT INTO spotify_artists (id, name, genres, image_key, status)
+         VALUES ('ar_alpha', 'Alpha', '{indie,pop}', 'artists/ar_alpha.jpg', 'ok'),
+                ('ar_beta', 'Beta', '{rock}', NULL, 'ok'),
+                ('ar_guest', 'Guest', '{}', NULL, 'ok')"
+    )
+    .execute(pool)
+    .await
+    .unwrap();
+    sqlx::query!("REFRESH MATERIALIZED VIEW artist_by_name")
+        .execute(pool)
+        .await
+        .unwrap();
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn enriched_stats(pool: PgPool) {
+    let (_f, schema) = setup(pool.clone()).await;
+    seed_enrichment(&pool).await;
+    let schema = &schema;
+    let me = account_id(schema, "me").await;
+
+    let data = run(
+        schema,
+        r#"query($filter: StatsFilter!) {
+            stats(filter: $filter) {
+                topGenres { edges { rank minutesPlayed node { name } } }
+                decades: breakdown(by: DECADE) { key label minutesPlayed }
+                musicAge { averageYears newShare coverage oldestYear oldest { name } }
+                completion { average finishedShare coverage }
+                mostAbandoned(minPlays: 2) { item { name } plays averageCompletion }
+                topAlbums(first: 1) { edges { node { name artworkUrl releaseYear } } }
+                genreTimeline(bucket: YEAR) { genre points { minutesPlayed } }
+            }
+            item(uri: "spotify:track:a2") {
+                artworkUrl durationMs explicit releaseYear releaseDate enriched
+                artists { name }
+                album { artworkUrl releaseYear }
+            }
+            bare: item(uri: "spotify:episode:e") { enriched artworkUrl artists { name } }
+            artist(name: "Alpha") { genres imageUrl }
+            enrichment { tracksEnriched tracksPending artistsEnriched artistsPending artworkStored }
+        }"#,
+        json!({"filter": {"accounts": [me]}}),
+    )
+    .await;
+    let stats = &data["stats"];
+
+    // Streams over 30s: a1 3m + 3m and a2 2m (Alpha: indie, pop), b1 4m (Beta: rock).
+    assert_eq!(
+        stats["topGenres"]["edges"],
+        json!([
+            {"rank": 1, "minutesPlayed": 8, "node": {"name": "indie"}},
+            {"rank": 2, "minutesPlayed": 8, "node": {"name": "pop"}},
+            {"rank": 3, "minutesPlayed": 4, "node": {"name": "rock"}},
+        ])
+    );
+    assert_eq!(
+        stats["decades"],
+        json!([
+            {"key": "1990s", "label": "1990s", "minutesPlayed": 8},
+            {"key": "2020s", "label": "2020s", "minutesPlayed": 4},
+        ])
+    );
+
+    // Played in 2024 (Perth): three plays of 1999 music, one of 2024 music.
+    let age = &stats["musicAge"];
+    assert_eq!(age["averageYears"], 18.75);
+    assert_eq!(age["newShare"], 0.25);
+    assert_eq!(age["coverage"], 1.0);
+    assert_eq!(age["oldestYear"], 1999);
+
+    // Every play counts here, including b1's 5s skip: 0.9, 0.9, 0.5, 1.0 and 5/240.
+    let completion = &stats["completion"];
+    let average = completion["average"].as_f64().unwrap();
+    assert!((average - (0.9 + 0.9 + 0.5 + 1.0 + 5.0 / 240.0) / 5.0).abs() < 1e-9);
+    assert_eq!(completion["finishedShare"], 0.6);
+    assert_eq!(completion["coverage"], 1.0);
+
+    let abandoned = &stats["mostAbandoned"];
+    assert_eq!(abandoned[0]["item"]["name"], "B1");
+    assert_eq!(abandoned[1]["item"]["name"], "A1");
+
+    assert_eq!(
+        stats["topAlbums"]["edges"][0]["node"],
+        json!({"name": "Alpha album", "artworkUrl": "/art/albums/al_a", "releaseYear": 1999})
+    );
+    let timeline = stats["genreTimeline"].as_array().unwrap();
+    assert_eq!(timeline.len(), 3);
+    assert_eq!(timeline[0]["genre"], "indie");
+
+    assert_eq!(
+        data["item"],
+        json!({
+            "artworkUrl": "/art/albums/al_a", "durationMs": 240000, "explicit": true,
+            "releaseYear": 1999, "releaseDate": "1999-03-14", "enriched": true,
+            "artists": [{"name": "Alpha"}, {"name": "Guest"}],
+            "album": {"artworkUrl": "/art/albums/al_a", "releaseYear": 1999},
+        })
+    );
+    assert_eq!(
+        data["bare"],
+        json!({"enriched": false, "artworkUrl": null, "artists": []})
+    );
+    assert_eq!(
+        data["artist"],
+        json!({"genres": ["indie", "pop"], "imageUrl": "/art/artists/ar_alpha"})
+    );
+    // The episode is the only item left; every credited artist is fetched.
+    assert_eq!(
+        data["enrichment"],
+        json!({"tracksEnriched": 3, "tracksPending": 1, "artistsEnriched": 3, "artistsPending": 0, "artworkStored": 2})
+    );
+}

@@ -3,6 +3,7 @@ import { graphql, useLazyLoadQuery } from "react-relay";
 import { Link, useSearchParams } from "react-router";
 import { Search } from "lucide-react";
 import type { SearchPageQuery } from "./__generated__/SearchPageQuery.graphql";
+import Artwork from "@/components/Artwork";
 import { artistPath, itemPath } from "@/lib/paths";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +17,7 @@ function Results({ query }: { query: string }) {
               node {
                 id
                 name
+                imageUrl
               }
             }
           }
@@ -27,6 +29,7 @@ function Results({ query }: { query: string }) {
                 kind
                 name
                 artistName
+                artworkUrl
                 album {
                   name
                 }
@@ -50,7 +53,8 @@ function Results({ query }: { query: string }) {
         <h2 className="text-muted-foreground mb-2 text-sm font-medium">Artists</h2>
         <ul className="divide-y">
           {artists.edges.map((e) => (
-            <li key={e.node.id} className="py-2">
+            <li key={e.node.id} className="flex items-center gap-3 py-2">
+              <Artwork url={e.node.imageUrl} alt={e.node.name} round />
               <Link to={artistPath(e.node.name)} className="font-medium hover:underline">
                 {e.node.name}
               </Link>
@@ -62,13 +66,16 @@ function Results({ query }: { query: string }) {
         <h2 className="text-muted-foreground mb-2 text-sm font-medium">Tracks and episodes</h2>
         <ul className="divide-y">
           {items.edges.map((e) => (
-            <li key={e.node.id} className="py-2">
-              <Link to={itemPath(e.node.uri)} className="font-medium hover:underline">
-                {e.node.name ?? e.node.uri}
-              </Link>
-              <div className="text-muted-foreground truncate text-sm">
-                {[e.node.artistName, e.node.album?.name].filter(Boolean).join(" · ")}
-                {e.node.kind !== "TRACK" && ` · ${e.node.kind.toLowerCase()}`}
+            <li key={e.node.id} className="flex items-center gap-3 py-2">
+              <Artwork url={e.node.artworkUrl} alt={e.node.name ?? ""} />
+              <div className="min-w-0">
+                <Link to={itemPath(e.node.uri)} className="font-medium hover:underline">
+                  {e.node.name ?? e.node.uri}
+                </Link>
+                <div className="text-muted-foreground truncate text-sm">
+                  {[e.node.artistName, e.node.album?.name].filter(Boolean).join(" · ")}
+                  {e.node.kind !== "TRACK" && ` · ${e.node.kind.toLowerCase()}`}
+                </div>
               </div>
             </li>
           ))}

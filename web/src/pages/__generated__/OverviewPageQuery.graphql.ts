@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<b33e59cfdacf90a7c8ae526c86a421e3>>
+ * @generated SignedSource<<7e5b61a5b0488c211f9a7433531de5db>>
  * @lightSyntaxTransform
  */
 
@@ -39,6 +39,7 @@ export type OverviewPageQuery$data = {
         readonly minutesPlayed: number;
         readonly node: {
           readonly id: string;
+          readonly imageUrl: string | null | undefined;
           readonly name: string;
         };
         readonly plays: number;
@@ -50,6 +51,7 @@ export type OverviewPageQuery$data = {
         readonly minutesPlayed: number;
         readonly node: {
           readonly artistName: string | null | undefined;
+          readonly artworkUrl: string | null | undefined;
           readonly id: string;
           readonly name: string | null | undefined;
           readonly uri: string;
@@ -160,7 +162,14 @@ v10 = {
           "plural": false,
           "selections": [
             (v8/*:: as any*/),
-            (v9/*:: as any*/)
+            (v9/*:: as any*/),
+            {
+              "alias": null,
+              "args": null,
+              "kind": "ScalarField",
+              "name": "imageUrl",
+              "storageKey": null
+            }
           ],
           "storageKey": null
         }
@@ -211,6 +220,13 @@ v11 = {
               "args": null,
               "kind": "ScalarField",
               "name": "artistName",
+              "storageKey": null
+            },
+            {
+              "alias": null,
+              "args": null,
+              "kind": "ScalarField",
+              "name": "artworkUrl",
               "storageKey": null
             }
           ],
@@ -417,16 +433,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "2e5902c2096f797577eeb28b34486a85",
+    "cacheID": "f8bbe8a2267af063dd654906f899adba",
     "id": null,
     "metadata": {},
     "name": "OverviewPageQuery",
     "operationKind": "query",
-    "text": "query OverviewPageQuery(\n  $filter: StatsFilter!\n  $bucket: TimeBucket!\n) {\n  stats(filter: $filter) {\n    summary {\n      ...StatTiles_summary\n    }\n    timeline(bucket: $bucket) {\n      ...TimelineChart_points\n    }\n    heatmap {\n      ...Heatmap_cells\n    }\n    topArtists(first: 5) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          name\n        }\n      }\n    }\n    topItems(first: 5) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          uri\n          name\n          artistName\n        }\n      }\n    }\n  }\n}\n\nfragment Heatmap_cells on HeatmapCell {\n  dayOfWeek\n  hour\n  plays\n  minutesPlayed\n}\n\nfragment StatTiles_summary on Summary {\n  plays\n  minutesPlayed\n  distinctTracks\n  distinctArtists\n  skipRate\n  firstPlayed\n  lastPlayed\n}\n\nfragment TimelineChart_points on TimelinePoint {\n  start\n  plays\n  minutesPlayed\n}\n"
+    "text": "query OverviewPageQuery(\n  $filter: StatsFilter!\n  $bucket: TimeBucket!\n) {\n  stats(filter: $filter) {\n    summary {\n      ...StatTiles_summary\n    }\n    timeline(bucket: $bucket) {\n      ...TimelineChart_points\n    }\n    heatmap {\n      ...Heatmap_cells\n    }\n    topArtists(first: 5) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          name\n          imageUrl\n        }\n      }\n    }\n    topItems(first: 5) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          uri\n          name\n          artistName\n          artworkUrl\n        }\n      }\n    }\n  }\n}\n\nfragment Heatmap_cells on HeatmapCell {\n  dayOfWeek\n  hour\n  plays\n  minutesPlayed\n}\n\nfragment StatTiles_summary on Summary {\n  plays\n  minutesPlayed\n  distinctTracks\n  distinctArtists\n  skipRate\n  firstPlayed\n  lastPlayed\n}\n\nfragment TimelineChart_points on TimelinePoint {\n  start\n  plays\n  minutesPlayed\n}\n"
   }
 };
 })();
 
-(node as any).hash = "3ccbe823294e9405db4ab85476f31e89";
+(node as any).hash = "93a87b7ec85753d7486be8ad341fa00d";
 
 export default node;

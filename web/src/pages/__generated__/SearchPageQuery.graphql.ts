@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<9362c2462104a8e68c8466977d56fb15>>
+ * @generated SignedSource<<25d72cecb9c73d08cebe114a6c2e9847>>
  * @lightSyntaxTransform
  */
 
@@ -18,6 +18,7 @@ export type SearchPageQuery$data = {
       readonly edges: ReadonlyArray<{
         readonly node: {
           readonly id: string;
+          readonly imageUrl: string | null | undefined;
           readonly name: string;
         };
       }>;
@@ -29,6 +30,7 @@ export type SearchPageQuery$data = {
             readonly name: string;
           } | null | undefined;
           readonly artistName: string | null | undefined;
+          readonly artworkUrl: string | null | undefined;
           readonly id: string;
           readonly kind: ItemKind;
           readonly name: string | null | undefined;
@@ -111,7 +113,14 @@ v3 = [
                 "plural": false,
                 "selections": [
                   (v1/*:: as any*/),
-                  (v2/*:: as any*/)
+                  (v2/*:: as any*/),
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "imageUrl",
+                    "storageKey": null
+                  }
                 ],
                 "storageKey": null
               }
@@ -177,6 +186,13 @@ v3 = [
                   {
                     "alias": null,
                     "args": null,
+                    "kind": "ScalarField",
+                    "name": "artworkUrl",
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
                     "concreteType": "Album",
                     "kind": "LinkedField",
                     "name": "album",
@@ -217,16 +233,16 @@ return {
     "selections": (v3/*:: as any*/)
   },
   "params": {
-    "cacheID": "fafbd9f78a72ddcd2d79af25a75b8169",
+    "cacheID": "c878a2e0a77d5f7391924fee96ae1189",
     "id": null,
     "metadata": {},
     "name": "SearchPageQuery",
     "operationKind": "query",
-    "text": "query SearchPageQuery(\n  $query: String!\n) {\n  search(query: $query) {\n    artists(first: 8) {\n      edges {\n        node {\n          id\n          name\n        }\n      }\n    }\n    items(first: 25) {\n      edges {\n        node {\n          id\n          uri\n          kind\n          name\n          artistName\n          album {\n            name\n          }\n        }\n      }\n    }\n  }\n}\n"
+    "text": "query SearchPageQuery(\n  $query: String!\n) {\n  search(query: $query) {\n    artists(first: 8) {\n      edges {\n        node {\n          id\n          name\n          imageUrl\n        }\n      }\n    }\n    items(first: 25) {\n      edges {\n        node {\n          id\n          uri\n          kind\n          name\n          artistName\n          artworkUrl\n          album {\n            name\n          }\n        }\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "54f2c56e4d8edb20bf1a0eba4e3628d4";
+(node as any).hash = "2eb157cc33b59af778cf16c9f6b2a9f2";
 
 export default node;

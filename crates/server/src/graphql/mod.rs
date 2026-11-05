@@ -64,6 +64,18 @@ pub fn schema(pool: PgPool) -> AppSchema {
             loaders::ItemLoader(pool.clone()),
             tokio::spawn,
         ))
+        .data(DataLoader::new(
+            loaders::ItemMetaLoader(pool.clone()),
+            tokio::spawn,
+        ))
+        .data(DataLoader::new(
+            loaders::ItemArtistsLoader(pool.clone()),
+            tokio::spawn,
+        ))
+        .data(DataLoader::new(
+            loaders::ArtistMetaLoader(pool.clone()),
+            tokio::spawn,
+        ))
         .data(pool)
         .finish()
 }

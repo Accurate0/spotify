@@ -4,6 +4,9 @@ import { Link } from "react-router";
 import type { InsightsPageQuery } from "./__generated__/InsightsPageQuery.graphql";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import ShareList from "@/components/ShareList";
+import Artwork from "@/components/Artwork";
+import GenreChart from "@/components/GenreChart";
+import RankRow from "@/components/RankRow";
 import { useFilter, type StatsFilter } from "@/lib/filter";
 import { formatDate, formatDay, formatDuration, formatNumber, formatPercent } from "@/lib/format";
 import { artistPath, itemPath } from "@/lib/paths";
@@ -44,7 +47,7 @@ type SkipRow = {
   readonly plays: number;
   readonly skips: number;
   readonly skipRate: number;
-  readonly artist: { readonly id: string; readonly name: string };
+  readonly artist: { readonly id: string; readonly name: string; readonly imageUrl?: string | null };
 };
 
 function ArtistSkips({ most, least }: { most: readonly SkipRow[]; least: readonly SkipRow[] }) {
@@ -76,6 +79,7 @@ function ArtistSkips({ most, least }: { most: readonly SkipRow[]; least: readonl
           {rows.map((r) => (
             <Row
               key={r.artist.id}
+              image={<Artwork url={r.artist.imageUrl} alt={r.artist.name} round />}
               title={
                 <span>
                   <span className="text-muted-foreground mr-2 tabular-nums">{r.rank}</span>
@@ -102,12 +106,25 @@ function Empty() {
   return <p className="text-muted-foreground text-sm">Nothing in this range.</p>;
 }
 
-function Row({ title, subtitle, value }: { title: ReactNode; subtitle?: ReactNode; value: ReactNode }) {
+function Row({
+  image,
+  title,
+  subtitle,
+  value,
+}: {
+  image?: ReactNode;
+  title: ReactNode;
+  subtitle?: ReactNode;
+  value: ReactNode;
+}) {
   return (
     <li className="flex items-center justify-between gap-3 py-2">
-      <div className="min-w-0">
-        <div className="truncate font-medium">{title}</div>
-        {subtitle && <div className="text-muted-foreground truncate text-sm">{subtitle}</div>}
+      <div className="flex min-w-0 items-center gap-3">
+        {image}
+        <div className="min-w-0">
+          <div className="truncate font-medium">{title}</div>
+          {subtitle && <div className="text-muted-foreground truncate text-sm">{subtitle}</div>}
+        </div>
       </div>
       <div className="shrink-0 text-right text-sm tabular-nums">{value}</div>
     </li>
@@ -128,14 +145,49 @@ function countryName(code: string): string {
 }
 
 export default function InsightsPage() {
-  const { filter } = useFilter();
+  const { filter, state } = useFilter();
   // Skip rates need every play, including the short ones the default filter drops.
   const allPlays: StatsFilter = { ...filter, minMsPlayed: 0 };
 
   const data = useLazyLoadQuery<InsightsPageQuery>(
     graphql`
-      query InsightsPageQuery($filter: StatsFilter!, $allPlays: StatsFilter!) {
+      query InsightsPageQuery($filter: StatsFilter!, $allPlays: StatsFilter!, $bucket: TimeBucket!) {
+        enrichment {
+          listeningCoverage
+        }
         stats(filter: $filter) {
+          topGenres(first: 10) {
+            edges {
+              rank
+              plays
+              minutesPlayed
+              node {
+                name
+              }
+            }
+          }
+          genreTimeline(bucket: $bucket) {
+            genre
+            points {
+              start
+              minutesPlayed
+            }
+          }
+          musicAge {
+            averageYears
+            newShare
+            oldestYear
+            oldest {
+              name
+              artistName
+            }
+          }
+          decades: breakdown(by: DECADE) {
+            key
+            label
+            plays
+            minutesPlayed
+          }
           listeningDays {
             activeDays
             spanDays
@@ -175,6 +227,7 @@ export default function InsightsPage() {
               uri
               name
               artistName
+              artworkUrl
             }
           }
           discoveries(first: 10) {
@@ -183,6 +236,7 @@ export default function InsightsPage() {
                 artist {
                   id
                   name
+                  imageUrl
                 }
                 firstPlayed
                 minutesPlayed
@@ -198,6 +252,7 @@ export default function InsightsPage() {
                 artist {
                   id
                   name
+                  imageUrl
                 }
                 minutesPlayed
                 lastPlayed
@@ -231,6 +286,21 @@ export default function InsightsPage() {
           }
         }
         skips: stats(filter: $allPlays) {
+          completion {
+            average
+            finishedShare
+          }
+          mostAbandoned(first: 8) {
+            plays
+            averageCompletion
+            item {
+              id
+              uri
+              name
+              artistName
+              artworkUrl
+            }
+          }
           mostSkippedArtists: artistSkipRates(order: MOST_SKIPPED, first: 10) {
             rank
             plays
@@ -239,6 +309,7 @@ export default function InsightsPage() {
             artist {
               id
               name
+              imageUrl
             }
           }
           leastSkippedArtists: artistSkipRates(order: LEAST_SKIPPED, first: 10) {
@@ -249,6 +320,7 @@ export default function InsightsPage() {
             artist {
               id
               name
+              imageUrl
             }
           }
           mostSkipped(first: 8) {
@@ -260,12 +332,13 @@ export default function InsightsPage() {
               uri
               name
               artistName
+              artworkUrl
             }
           }
         }
       }
     `,
-    { filter, allPlays },
+    { filter, allPlays, bucket: state.range === "all" ? "YEAR" : "MONTH" },
   );
 
   const s = data.stats;
@@ -274,7 +347,13 @@ export default function InsightsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      {data.enrichment.listeningCoverage < 0.99 && (
+        <p className="text-muted-foreground text-sm">
+          Genres, release years and track lengths cover {formatPercent(data.enrichment.listeningCoverage)} of your
+          listening so far; Spotify metadata is still being fetched.
+        </p>
+      )}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         <Tile
           label="Active days"
           value={formatNumber(days.activeDays)}
@@ -303,6 +382,24 @@ export default function InsightsPage() {
           }
         />
         <Tile
+          label="Music age"
+          value={s.musicAge.averageYears != null ? `${s.musicAge.averageYears.toFixed(1)} years` : "–"}
+          detail={
+            s.musicAge.newShare != null
+              ? `between release and play · ${formatPercent(s.musicAge.newShare)} of plays released that year`
+              : undefined
+          }
+        />
+        <Tile
+          label="Completion"
+          value={data.skips.completion.average != null ? formatPercent(data.skips.completion.average) : "–"}
+          detail={
+            data.skips.completion.finishedShare != null
+              ? `of each track played · ${formatPercent(data.skips.completion.finishedShare)} played to the end`
+              : undefined
+          }
+        />
+        <Tile
           label="Longest session"
           value={sessions.longest ? formatDuration(sessions.longest.minutesPlayed) : "–"}
           detail={
@@ -313,7 +410,80 @@ export default function InsightsPage() {
         />
       </div>
 
+      <Section
+        title="Genres over time"
+        description="Your all-time top genres, from the Spotify genres of each track's main artist"
+      >
+        <GenreChart
+          genres={s.genreTimeline.map((g) => g.genre)}
+          series={s.genreTimeline}
+          bucket={state.range === "all" ? "YEAR" : "MONTH"}
+        />
+      </Section>
+
       <div className="grid gap-6 lg:grid-cols-2">
+        <Section
+          title="Top genres"
+          description="A play counts toward every genre of its main artist, so genres overlap"
+        >
+          {s.topGenres.edges.length === 0 ? (
+            <Empty />
+          ) : (
+            <ol>
+              {s.topGenres.edges.map((e) => (
+                <RankRow
+                  key={e.node.name}
+                  rank={e.rank}
+                  title={e.node.name}
+                  minutes={e.minutesPlayed}
+                  plays={e.plays}
+                  max={s.topGenres.edges[0].minutesPlayed}
+                  by="MINUTES_PLAYED"
+                />
+              ))}
+            </ol>
+          )}
+        </Section>
+
+        <Section
+          title="Release decades"
+          description={
+            s.musicAge.oldest
+              ? `Oldest: ${s.musicAge.oldest.name ?? ""} by ${s.musicAge.oldest.artistName ?? ""} (${s.musicAge.oldestYear})`
+              : "When the music you play came out"
+          }
+        >
+          <ShareList
+            rows={s.decades
+              .filter((d) => d.key != null)
+              .sort((a, b) => (a.key ?? "").localeCompare(b.key ?? ""))}
+            limit={12}
+          />
+        </Section>
+
+        <Section title="Most abandoned" description="Tracks with at least 10 plays you stop furthest from the end">
+          {data.skips.mostAbandoned.length === 0 ? (
+            <Empty />
+          ) : (
+            <ol className="divide-y">
+              {data.skips.mostAbandoned.map((a) => (
+                <Row
+                  key={a.item.id}
+                  image={<Artwork url={a.item.artworkUrl} alt={a.item.name ?? ""} />}
+                  title={<Link to={itemPath(a.item.uri)} className="hover:underline">{a.item.name ?? a.item.uri}</Link>}
+                  subtitle={a.item.artistName}
+                  value={
+                    <>
+                      <div className="font-medium">{formatPercent(a.averageCompletion)}</div>
+                      <div className="text-muted-foreground text-xs">played, {a.plays} plays</div>
+                    </>
+                  }
+                />
+              ))}
+            </ol>
+          )}
+        </Section>
+
         <Section title="Discoveries" description="Artists first heard in this range">
           {s.discoveries.edges.length === 0 ? (
             <Empty />
@@ -322,6 +492,7 @@ export default function InsightsPage() {
               {s.discoveries.edges.map(({ node: d }) => (
                 <Row
                   key={d.artist.id}
+                  image={<Artwork url={d.artist.imageUrl} alt={d.artist.name} round />}
                   title={<Link to={artistPath(d.artist.name)} className="hover:underline">{d.artist.name}</Link>}
                   subtitle={`Since ${formatDate(d.firstPlayed)}${d.firstItem?.name ? ` via ${d.firstItem.name}` : ""}`}
                   value={formatDuration(d.minutesPlayed)}
@@ -365,6 +536,7 @@ export default function InsightsPage() {
               {s.onRepeat.map((r) => (
                 <Row
                   key={r.item.id}
+                  image={<Artwork url={r.item.artworkUrl} alt={r.item.name ?? ""} />}
                   title={<Link to={itemPath(r.item.uri)} className="hover:underline">{r.item.name ?? r.item.uri}</Link>}
                   subtitle={`${r.item.artistName ?? ""} · ${formatDay(r.date)}`}
                   value={<span className="font-medium">{r.plays}×</span>}
@@ -382,6 +554,7 @@ export default function InsightsPage() {
               {data.skips.mostSkipped.map((m) => (
                 <Row
                   key={m.item.id}
+                  image={<Artwork url={m.item.artworkUrl} alt={m.item.name ?? ""} />}
                   title={<Link to={itemPath(m.item.uri)} className="hover:underline">{m.item.name ?? m.item.uri}</Link>}
                   subtitle={m.item.artistName}
                   value={
@@ -409,6 +582,7 @@ export default function InsightsPage() {
               {s.forgottenArtists.edges.map(({ node: f }) => (
                 <Row
                   key={f.artist.id}
+                  image={<Artwork url={f.artist.imageUrl} alt={f.artist.name} round />}
                   title={<Link to={artistPath(f.artist.name)} className="hover:underline">{f.artist.name}</Link>}
                   subtitle={`Last played ${formatDate(f.lastPlayed)}`}
                   value={formatDuration(f.minutesPlayed)}

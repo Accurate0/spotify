@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<0b011bbb7cd39b76ada7d2d6f6aeeec1>>
+ * @generated SignedSource<<848beca81b1afb9cde9fbfddba5baf62>>
  * @lightSyntaxTransform
  */
 
@@ -221,6 +221,13 @@ return {
                               {
                                 "alias": null,
                                 "args": null,
+                                "kind": "ScalarField",
+                                "name": "artworkUrl",
+                                "storageKey": null
+                              },
+                              {
+                                "alias": null,
+                                "args": null,
                                 "concreteType": "Album",
                                 "kind": "LinkedField",
                                 "name": "album",
@@ -294,16 +301,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "43751e0c55c7fd5fe839f4807da16fc6",
+    "cacheID": "e7d1e20e5a6dca4e0405618f6fc02103",
     "id": null,
     "metadata": {},
     "name": "ArtistPageTracksPaginationQuery",
     "operationKind": "query",
-    "text": "query ArtistPageTracksPaginationQuery(\n  $after: String\n  $filter: StatsFilter!\n  $first: Int = 20\n  $id: ID!\n) {\n  node(id: $id) {\n    __typename\n    ...ArtistPageTracks_artist_G9cLv\n    id\n  }\n}\n\nfragment ArtistPageTracks_artist_G9cLv on Artist {\n  stats(filter: $filter) {\n    topItems(first: $first, after: $after) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          uri\n          name\n          album {\n            name\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n  id\n}\n"
+    "text": "query ArtistPageTracksPaginationQuery(\n  $after: String\n  $filter: StatsFilter!\n  $first: Int = 20\n  $id: ID!\n) {\n  node(id: $id) {\n    __typename\n    ...ArtistPageTracks_artist_G9cLv\n    id\n  }\n}\n\nfragment ArtistPageTracks_artist_G9cLv on Artist {\n  stats(filter: $filter) {\n    topItems(first: $first, after: $after) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          uri\n          name\n          artworkUrl\n          album {\n            name\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n  id\n}\n"
   }
 };
 })();
 
-(node as any).hash = "2b9b952f6f59aef0a7667508fc37f819";
+(node as any).hash = "971b70aa0aaabfe6bcc399d023066317";
 
 export default node;

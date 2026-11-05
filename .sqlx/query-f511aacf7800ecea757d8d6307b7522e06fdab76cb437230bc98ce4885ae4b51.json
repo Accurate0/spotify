@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT s.genres FROM artist_by_name b JOIN spotify_artists s ON s.id = b.artist_id\n         WHERE b.name = 'Alpha'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "genres",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "spotify_artists",
+            "name": "genres"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f511aacf7800ecea757d8d6307b7522e06fdab76cb437230bc98ce4885ae4b51"
+}

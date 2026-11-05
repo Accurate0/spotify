@@ -1,28 +1,22 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT album AS \"album!\", artist, count(*)::int AS \"plays!\",\n                      (sum(ms_played) / 60000)::int AS \"minutes!\"\n               FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)\n               WHERE album IS NOT NULL\n               GROUP BY album, artist\n               ORDER BY CASE WHEN $8 THEN count(*) ELSE sum(ms_played) END DESC, album, artist\n               LIMIT $9 OFFSET $10",
+  "query": "SELECT g AS \"genre!\", count(*)::int AS \"plays!\", (sum(p.ms_played) / 60000)::int AS \"minutes!\"\n           FROM scoped_plays($1, $2, $3, $4, $5, $6, $7) p\n           JOIN item_artists ia ON ia.item_uri = p.item_uri AND ia.position = 0\n           JOIN spotify_artists sa ON sa.id = ia.artist_id\n           CROSS JOIN LATERAL unnest(sa.genres) AS g\n           GROUP BY g\n           ORDER BY CASE WHEN $8 THEN count(*) ELSE sum(p.ms_played) END DESC, g\n           LIMIT $9 OFFSET $10",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "album!",
+        "name": "genre!",
         "type_info": "Text",
         "origin": "Expression"
       },
       {
         "ordinal": 1,
-        "name": "artist",
-        "type_info": "Text",
-        "origin": "Expression"
-      },
-      {
-        "ordinal": 2,
         "name": "plays!",
         "type_info": "Int4",
         "origin": "Expression"
       },
       {
-        "ordinal": 3,
+        "ordinal": 2,
         "name": "minutes!",
         "type_info": "Int4",
         "origin": "Expression"
@@ -45,9 +39,8 @@
     "nullable": [
       null,
       null,
-      null,
       null
     ]
   },
-  "hash": "8ac2dd684e38a18c16e913636590a6c73431ed91f0b99865330afd91e7825427"
+  "hash": "6768d51a838e17daa64a567fb727417d1856de92485bbded4eba04bfa256ff8f"
 }

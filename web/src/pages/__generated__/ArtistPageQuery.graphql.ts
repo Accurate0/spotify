@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<57d272405fc31bc25235c1b0948c991a>>
+ * @generated SignedSource<<5dfc383d86e4328b3ab8c040e518391b>>
  * @lightSyntaxTransform
  */
 
@@ -24,6 +24,8 @@ export type ArtistPageQuery$variables = {
 };
 export type ArtistPageQuery$data = {
   readonly artist: {
+    readonly genres: ReadonlyArray<string>;
+    readonly imageUrl: string | null | undefined;
     readonly name: string;
     readonly stats: {
       readonly summary: {
@@ -67,56 +69,70 @@ v3 = {
   "name": "name",
   "storageKey": null
 },
-v4 = [
+v4 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "imageUrl",
+  "storageKey": null
+},
+v5 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "genres",
+  "storageKey": null
+},
+v6 = [
   {
     "kind": "Variable",
     "name": "filter",
     "variableName": "filter"
   }
 ],
-v5 = [
+v7 = [
   {
     "kind": "Literal",
     "name": "bucket",
     "value": "MONTH"
   }
 ],
-v6 = {
+v8 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "plays",
   "storageKey": null
 },
-v7 = {
+v9 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "minutesPlayed",
   "storageKey": null
 },
-v8 = {
+v10 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "uri",
   "storageKey": null
 },
-v9 = {
+v11 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "id",
   "storageKey": null
 },
-v10 = {
+v12 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "start",
   "storageKey": null
 },
-v11 = [
+v13 = [
   {
     "kind": "Literal",
     "name": "first",
@@ -142,9 +158,11 @@ return {
         "plural": false,
         "selections": [
           (v3/*:: as any*/),
+          (v4/*:: as any*/),
+          (v5/*:: as any*/),
           {
             "alias": null,
-            "args": (v4/*:: as any*/),
+            "args": (v6/*:: as any*/),
             "concreteType": "Stats",
             "kind": "LinkedField",
             "name": "stats",
@@ -173,7 +191,7 @@ return {
               },
               {
                 "alias": null,
-                "args": (v5/*:: as any*/),
+                "args": (v7/*:: as any*/),
                 "concreteType": "TimelinePoint",
                 "kind": "LinkedField",
                 "name": "timeline",
@@ -191,7 +209,7 @@ return {
             "storageKey": null
           },
           {
-            "args": (v4/*:: as any*/),
+            "args": (v6/*:: as any*/),
             "kind": "FragmentSpread",
             "name": "ArtistPageTracks_artist"
           }
@@ -220,9 +238,11 @@ return {
         "plural": false,
         "selections": [
           (v3/*:: as any*/),
+          (v4/*:: as any*/),
+          (v5/*:: as any*/),
           {
             "alias": null,
-            "args": (v4/*:: as any*/),
+            "args": (v6/*:: as any*/),
             "concreteType": "Stats",
             "kind": "LinkedField",
             "name": "stats",
@@ -236,8 +256,8 @@ return {
                 "name": "summary",
                 "plural": false,
                 "selections": [
-                  (v6/*:: as any*/),
-                  (v7/*:: as any*/),
+                  (v8/*:: as any*/),
+                  (v9/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -299,9 +319,9 @@ return {
                     "name": "item",
                     "plural": false,
                     "selections": [
-                      (v8/*:: as any*/),
+                      (v10/*:: as any*/),
                       (v3/*:: as any*/),
-                      (v9/*:: as any*/)
+                      (v11/*:: as any*/)
                     ],
                     "storageKey": null
                   }
@@ -329,8 +349,8 @@ return {
                     "name": "date",
                     "storageKey": null
                   },
-                  (v6/*:: as any*/),
-                  (v7/*:: as any*/)
+                  (v8/*:: as any*/),
+                  (v9/*:: as any*/)
                 ],
                 "storageKey": "topDays(first:1)"
               },
@@ -364,7 +384,7 @@ return {
                         "name": "days",
                         "storageKey": null
                       },
-                      (v10/*:: as any*/),
+                      (v12/*:: as any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -380,21 +400,21 @@ return {
               },
               {
                 "alias": null,
-                "args": (v5/*:: as any*/),
+                "args": (v7/*:: as any*/),
                 "concreteType": "TimelinePoint",
                 "kind": "LinkedField",
                 "name": "timeline",
                 "plural": true,
                 "selections": [
-                  (v10/*:: as any*/),
-                  (v6/*:: as any*/),
-                  (v7/*:: as any*/)
+                  (v12/*:: as any*/),
+                  (v8/*:: as any*/),
+                  (v9/*:: as any*/)
                 ],
                 "storageKey": "timeline(bucket:\"MONTH\")"
               },
               {
                 "alias": null,
-                "args": (v11/*:: as any*/),
+                "args": (v13/*:: as any*/),
                 "concreteType": "RankedItemConnection",
                 "kind": "LinkedField",
                 "name": "topItems",
@@ -415,8 +435,8 @@ return {
                         "name": "rank",
                         "storageKey": null
                       },
-                      (v6/*:: as any*/),
-                      (v7/*:: as any*/),
+                      (v8/*:: as any*/),
+                      (v9/*:: as any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -425,9 +445,16 @@ return {
                         "name": "node",
                         "plural": false,
                         "selections": [
-                          (v9/*:: as any*/),
-                          (v8/*:: as any*/),
+                          (v11/*:: as any*/),
+                          (v10/*:: as any*/),
                           (v3/*:: as any*/),
+                          {
+                            "alias": null,
+                            "args": null,
+                            "kind": "ScalarField",
+                            "name": "artworkUrl",
+                            "storageKey": null
+                          },
                           {
                             "alias": null,
                             "args": null,
@@ -490,7 +517,7 @@ return {
               },
               {
                 "alias": null,
-                "args": (v11/*:: as any*/),
+                "args": (v13/*:: as any*/),
                 "filters": null,
                 "handle": "connection",
                 "key": "ArtistPageTracks_topItems",
@@ -500,23 +527,23 @@ return {
             ],
             "storageKey": null
           },
-          (v9/*:: as any*/)
+          (v11/*:: as any*/)
         ],
         "storageKey": null
       }
     ]
   },
   "params": {
-    "cacheID": "cee5823f62b98dcc21b358391719a2c2",
+    "cacheID": "6cd122b173ed8d7cdecd4d086835b5a6",
     "id": null,
     "metadata": {},
     "name": "ArtistPageQuery",
     "operationKind": "query",
-    "text": "query ArtistPageQuery(\n  $name: String!\n  $filter: StatsFilter!\n) {\n  artist(name: $name) {\n    name\n    stats(filter: $filter) {\n      summary {\n        ...StatTiles_summary\n      }\n      ...Firsts_stats\n      timeline(bucket: MONTH) {\n        ...TimelineChart_points\n      }\n    }\n    ...ArtistPageTracks_artist_Vt7Yj\n    id\n  }\n}\n\nfragment ArtistPageTracks_artist_Vt7Yj on Artist {\n  stats(filter: $filter) {\n    topItems(first: 20) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          uri\n          name\n          album {\n            name\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n  id\n}\n\nfragment Firsts_stats on Stats {\n  firstPlay {\n    ts\n    item {\n      uri\n      name\n      id\n    }\n  }\n  topDays(first: 1) {\n    date\n    plays\n    minutesPlayed\n  }\n  listeningDays {\n    activeDays\n    longestStreak {\n      days\n      start\n      end\n    }\n  }\n}\n\nfragment StatTiles_summary on Summary {\n  plays\n  minutesPlayed\n  distinctTracks\n  distinctArtists\n  skipRate\n  firstPlayed\n  lastPlayed\n}\n\nfragment TimelineChart_points on TimelinePoint {\n  start\n  plays\n  minutesPlayed\n}\n"
+    "text": "query ArtistPageQuery(\n  $name: String!\n  $filter: StatsFilter!\n) {\n  artist(name: $name) {\n    name\n    imageUrl\n    genres\n    stats(filter: $filter) {\n      summary {\n        ...StatTiles_summary\n      }\n      ...Firsts_stats\n      timeline(bucket: MONTH) {\n        ...TimelineChart_points\n      }\n    }\n    ...ArtistPageTracks_artist_Vt7Yj\n    id\n  }\n}\n\nfragment ArtistPageTracks_artist_Vt7Yj on Artist {\n  stats(filter: $filter) {\n    topItems(first: 20) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          uri\n          name\n          artworkUrl\n          album {\n            name\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n  id\n}\n\nfragment Firsts_stats on Stats {\n  firstPlay {\n    ts\n    item {\n      uri\n      name\n      id\n    }\n  }\n  topDays(first: 1) {\n    date\n    plays\n    minutesPlayed\n  }\n  listeningDays {\n    activeDays\n    longestStreak {\n      days\n      start\n      end\n    }\n  }\n}\n\nfragment StatTiles_summary on Summary {\n  plays\n  minutesPlayed\n  distinctTracks\n  distinctArtists\n  skipRate\n  firstPlayed\n  lastPlayed\n}\n\nfragment TimelineChart_points on TimelinePoint {\n  start\n  plays\n  minutesPlayed\n}\n"
   }
 };
 })();
 
-(node as any).hash = "39f665feb563c86c7ccb5b318cb1802f";
+(node as any).hash = "ff0b3f675a8cb438402b825dc2f1f98d";
 
 export default node;

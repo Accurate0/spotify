@@ -1,8 +1,11 @@
 //! Items (tracks, episodes, audiobook chapters), artists and albums. Exports carry no artist or
 //! album URIs, so artists and albums are identified by name.
 
+use async_graphql::dataloader::DataLoader;
 use async_graphql::{Context, Enum, ID, Object};
 use sqlx::PgPool;
+
+use super::loaders::{ArtistMeta, ArtistMetaLoader, ItemArtistsLoader, ItemMeta, ItemMetaLoader};
 
 use super::node::{NodeType, encode};
 use super::page::{Page, PlainConnection};
@@ -36,7 +39,19 @@ pub struct Item {
     pub album: Option<String>,
 }
 
+/// `/art/albums/<id>` for an artwork bucket key like `albums/<id>.jpg`.
+pub fn art_url(key: &str) -> String {
+    format!("/art/{}", key.trim_end_matches(".jpg"))
+}
+
 impl Item {
+    async fn meta(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<ItemMeta>> {
+        Ok(ctx
+            .data::<DataLoader<ItemMetaLoader>>()?
+            .load_one(self.uri.clone())
+            .await?)
+    }
+
     pub async fn by_uri(pool: &PgPool, uri: &str) -> sqlx::Result<Option<Self>> {
         sqlx::query_as!(
             Self,
@@ -75,11 +90,60 @@ impl Item {
         self.artist.clone().map(|name| Artist { name })
     }
 
-    async fn album(&self) -> Option<Album> {
-        self.album.clone().map(|name| Album {
+    async fn album(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Album>> {
+        let Some(name) = self.album.clone() else {
+            return Ok(None);
+        };
+        let meta = self.meta(ctx).await?;
+        Ok(Some(Album {
             name,
             artist: self.artist.clone(),
-        })
+            artwork_key: meta.as_ref().and_then(|m| m.album_image_key.clone()),
+            release_year: meta.and_then(|m| m.release_year),
+        }))
+    }
+
+    /// Album (or podcast show) artwork, once enrichment has stored it.
+    async fn artwork_url(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<String>> {
+        Ok(self
+            .meta(ctx)
+            .await?
+            .and_then(|m| m.album_image_key)
+            .map(|key| art_url(&key)))
+    }
+
+    /// Whether Spotify Web API metadata has been fetched for this item.
+    async fn enriched(&self, ctx: &Context<'_>) -> async_graphql::Result<bool> {
+        Ok(self.meta(ctx).await?.is_some())
+    }
+
+    async fn duration_ms(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<i32>> {
+        Ok(self.meta(ctx).await?.and_then(|m| m.duration_ms))
+    }
+
+    async fn explicit(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<bool>> {
+        Ok(self.meta(ctx).await?.and_then(|m| m.explicit))
+    }
+
+    /// `1999`, `1999-03` or `1999-03-14`, as precise as Spotify knows it.
+    async fn release_date(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<String>> {
+        Ok(self.meta(ctx).await?.and_then(|m| m.release_date))
+    }
+
+    async fn release_year(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<i32>> {
+        Ok(self.meta(ctx).await?.and_then(|m| m.release_year))
+    }
+
+    /// Every credited artist in credit order; empty until enriched.
+    async fn artists(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Artist>> {
+        Ok(ctx
+            .data::<DataLoader<ItemArtistsLoader>>()?
+            .load_one(self.uri.clone())
+            .await?
+            .unwrap_or_default()
+            .into_iter()
+            .map(|name| Artist { name })
+            .collect())
     }
 
     async fn stats(&self, #[graphql(default)] filter: StatsFilter) -> async_graphql::Result<Stats> {
@@ -118,12 +182,36 @@ impl Artist {
     async fn stats(&self, #[graphql(default)] filter: StatsFilter) -> async_graphql::Result<Stats> {
         Ok(Stats::new(filter.into_scope()?.artist(&self.name)))
     }
+
+    /// Spotify's genres for this artist; empty until enriched.
+    async fn genres(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<String>> {
+        Ok(self.meta(ctx).await?.map(|m| m.genres).unwrap_or_default())
+    }
+
+    async fn image_url(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<String>> {
+        Ok(self
+            .meta(ctx)
+            .await?
+            .and_then(|m| m.image_key)
+            .map(|key| art_url(&key)))
+    }
+}
+
+impl Artist {
+    async fn meta(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<ArtistMeta>> {
+        Ok(ctx
+            .data::<DataLoader<ArtistMetaLoader>>()?
+            .load_one(self.name.clone())
+            .await?)
+    }
 }
 
 #[derive(Clone)]
 pub struct Album {
     pub name: String,
     pub artist: Option<String>,
+    pub artwork_key: Option<String>,
+    pub release_year: Option<i32>,
 }
 
 #[Object]
@@ -134,6 +222,14 @@ impl Album {
 
     async fn artist(&self) -> Option<Artist> {
         self.artist.clone().map(|name| Artist { name })
+    }
+
+    async fn artwork_url(&self) -> Option<String> {
+        self.artwork_key.as_deref().map(art_url)
+    }
+
+    async fn release_year(&self) -> Option<i32> {
+        self.release_year
     }
 }
 

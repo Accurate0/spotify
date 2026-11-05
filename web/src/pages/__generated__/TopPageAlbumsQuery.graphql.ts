@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<c1e1933e748bbd3c973251a48bf16ef8>>
+ * @generated SignedSource<<a2ee11fa833220bb7a2f5edb086ea6f7>>
  * @lightSyntaxTransform
  */
 
@@ -157,6 +157,13 @@ return {
                       {
                         "alias": null,
                         "args": null,
+                        "kind": "ScalarField",
+                        "name": "artworkUrl",
+                        "storageKey": null
+                      },
+                      {
+                        "alias": null,
+                        "args": null,
                         "concreteType": "Artist",
                         "kind": "LinkedField",
                         "name": "artist",
@@ -238,12 +245,12 @@ return {
     ]
   },
   "params": {
-    "cacheID": "9e548125dc9cba406c23aeeb9019cf4d",
+    "cacheID": "32424e99bcadf4ef59eda0b7254bc8ac",
     "id": null,
     "metadata": {},
     "name": "TopPageAlbumsQuery",
     "operationKind": "query",
-    "text": "query TopPageAlbumsQuery(\n  $filter: StatsFilter!\n  $by: RankBy!\n) {\n  ...TopPageAlbums_query_9zxt2\n}\n\nfragment TopPageAlbums_query_9zxt2 on Query {\n  stats(filter: $filter) {\n    topAlbums(first: 50, by: $by) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          name\n          artist {\n            name\n            id\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
+    "text": "query TopPageAlbumsQuery(\n  $filter: StatsFilter!\n  $by: RankBy!\n) {\n  ...TopPageAlbums_query_9zxt2\n}\n\nfragment TopPageAlbums_query_9zxt2 on Query {\n  stats(filter: $filter) {\n    topAlbums(first: 50, by: $by) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          name\n          artworkUrl\n          artist {\n            name\n            id\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
   }
 };
 })();

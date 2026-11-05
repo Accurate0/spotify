@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO spotify_artists (id, status, attempts, last_error) VALUES ($1, $2, 1, $3)\n         ON CONFLICT (id) DO UPDATE SET\n            status = EXCLUDED.status, attempts = spotify_artists.attempts + 1,\n            last_error = EXCLUDED.last_error, fetched_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b63cfc347cd57a21166e86e9073c780af168946af8c1af07dfe00a8d0df1067c"
+}

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<0ca75e5f6ca2ad583984309126ae7895>>
+ * @generated SignedSource<<cebab9308c273dc2549a901fe53da237>>
  * @lightSyntaxTransform
  */
 
@@ -16,6 +16,7 @@ export type TopPageArtists_query$data = {
         readonly minutesPlayed: number;
         readonly node: {
           readonly id: string;
+          readonly imageUrl: string | null | undefined;
           readonly name: string;
         };
         readonly plays: number;
@@ -168,6 +169,13 @@ return {
                       "alias": null,
                       "args": null,
                       "kind": "ScalarField",
+                      "name": "imageUrl",
+                      "storageKey": null
+                    },
+                    {
+                      "alias": null,
+                      "args": null,
+                      "kind": "ScalarField",
                       "name": "__typename",
                       "storageKey": null
                     }
@@ -221,6 +229,6 @@ return {
 };
 })();
 
-(node as any).hash = "cb30ece6599ecc8d37aeb6a029bc367e";
+(node as any).hash = "c327260ae778faf37910d8384b1267e5";
 
 export default node;

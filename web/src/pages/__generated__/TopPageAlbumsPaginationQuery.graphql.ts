@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<9878a4e2ee4ea417423088166092928a>>
+ * @generated SignedSource<<7f6ff6b12e3e7c5d7086e2da14d16026>>
  * @lightSyntaxTransform
  */
 
@@ -174,6 +174,13 @@ return {
                       {
                         "alias": null,
                         "args": null,
+                        "kind": "ScalarField",
+                        "name": "artworkUrl",
+                        "storageKey": null
+                      },
+                      {
+                        "alias": null,
+                        "args": null,
                         "concreteType": "Artist",
                         "kind": "LinkedField",
                         "name": "artist",
@@ -255,16 +262,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "9fa516815d4b2d5aed002111f4810ceb",
+    "cacheID": "b5397e768e1e9246c3a43219d7e98e96",
     "id": null,
     "metadata": {},
     "name": "TopPageAlbumsPaginationQuery",
     "operationKind": "query",
-    "text": "query TopPageAlbumsPaginationQuery(\n  $after: String\n  $by: RankBy!\n  $filter: StatsFilter!\n  $first: Int = 50\n) {\n  ...TopPageAlbums_query_19NMb\n}\n\nfragment TopPageAlbums_query_19NMb on Query {\n  stats(filter: $filter) {\n    topAlbums(first: $first, after: $after, by: $by) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          name\n          artist {\n            name\n            id\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
+    "text": "query TopPageAlbumsPaginationQuery(\n  $after: String\n  $by: RankBy!\n  $filter: StatsFilter!\n  $first: Int = 50\n) {\n  ...TopPageAlbums_query_19NMb\n}\n\nfragment TopPageAlbums_query_19NMb on Query {\n  stats(filter: $filter) {\n    topAlbums(first: $first, after: $after, by: $by) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          name\n          artworkUrl\n          artist {\n            name\n            id\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "7a8bd069db5e84983ad690ad5044cd20";
+(node as any).hash = "13924e27129981118d26a3209b44c1d7";
 
 export default node;

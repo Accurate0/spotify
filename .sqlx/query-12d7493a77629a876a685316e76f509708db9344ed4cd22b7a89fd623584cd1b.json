@@ -1,0 +1,88 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT m.uri, m.duration_ms, m.explicit,\n                    a.image_key, a.release_date, a.release_year\n             FROM item_meta m LEFT JOIN spotify_albums a ON a.id = m.album_id\n             WHERE m.uri = ANY($1) AND m.status = 'ok'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "uri",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "item_meta",
+            "name": "uri"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "duration_ms",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "item_meta",
+            "name": "duration_ms"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "explicit",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "item_meta",
+            "name": "explicit"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "image_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "spotify_albums",
+            "name": "image_key"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "release_date",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "spotify_albums",
+            "name": "release_date"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "release_year",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "spotify_albums",
+            "name": "release_year"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "12d7493a77629a876a685316e76f509708db9344ed4cd22b7a89fd623584cd1b"
+}

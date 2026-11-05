@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO spotify_artists (id, name, genres, image_source_url, status)\n                     VALUES ($1, $2, $3, $4, 'ok')\n                     ON CONFLICT (id) DO UPDATE SET\n                        name = EXCLUDED.name,\n                        genres = EXCLUDED.genres,\n                        image_key = CASE\n                            WHEN spotify_artists.image_source_url IS DISTINCT FROM EXCLUDED.image_source_url\n                            THEN NULL ELSE spotify_artists.image_key END,\n                        image_source_url = EXCLUDED.image_source_url,\n                        status = 'ok', last_error = NULL, fetched_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "TextArray",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6cd9249e84b4fe4a12a57c75577ab830b853e23d7011ef77c102fb12672800da"
+}

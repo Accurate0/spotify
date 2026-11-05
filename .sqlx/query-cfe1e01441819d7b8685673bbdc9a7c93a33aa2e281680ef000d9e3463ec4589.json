@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO spotify_artists (id, name, genres, image_key, status)\n         VALUES ('ar_alpha', 'Alpha', '{indie,pop}', 'artists/ar_alpha.jpg', 'ok'),\n                ('ar_beta', 'Beta', '{rock}', NULL, 'ok'),\n                ('ar_guest', 'Guest', '{}', NULL, 'ok')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "cfe1e01441819d7b8685673bbdc9a7c93a33aa2e281680ef000d9e3463ec4589"
+}

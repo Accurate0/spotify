@@ -118,6 +118,12 @@ enum Command {
         #[arg(long, requires = "artists")]
         least: bool,
     },
+    /// Progress of the Spotify Web API backfill (metadata, genres, artwork).
+    Enrichment {
+        /// Time zone for timestamps.
+        #[arg(long, env = "SPOTIFY_TZ", default_value = "Australia/Perth")]
+        tz: chrono_tz::Tz,
+    },
     /// Stats and top tracks for an artist.
     Artist {
         name: String,
@@ -219,6 +225,7 @@ async fn main() -> anyhow::Result<()> {
             filter,
             limit,
         } => stats::artist(&client, &name, &filter, limit).await?,
+        Command::Enrichment { tz } => insights::enrichment(&client, tz).await?,
     }
 
     Ok(())

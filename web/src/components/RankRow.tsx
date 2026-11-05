@@ -9,6 +9,7 @@ export type RankBy = "MINUTES_PLAYED" | "PLAYS";
  */
 export default function RankRow({
   rank,
+  image,
   title,
   subtitle,
   minutes,
@@ -17,6 +18,8 @@ export default function RankRow({
   by,
 }: {
   rank: number;
+  /** Artwork beside the title (see Artwork). */
+  image?: ReactNode;
   title: ReactNode;
   subtitle?: ReactNode;
   minutes: number;
@@ -30,11 +33,14 @@ export default function RankRow({
   return (
     <li className="grid grid-cols-[2rem_minmax(0,1fr)_6rem] items-center gap-x-3 py-2">
       <span className="text-muted-foreground text-right text-sm tabular-nums">{rank}</span>
-      <div className="min-w-0">
+      <div className="flex min-w-0 items-center gap-3">
+        {image}
+        <div className="min-w-0 flex-1">
         <div className="truncate font-medium">{title}</div>
         {subtitle && <div className="text-muted-foreground truncate text-sm">{subtitle}</div>}
         <div className="bg-muted mt-1.5 h-1.5 rounded-full">
           <div className="bg-series-1 h-full rounded-full" style={{ width: `${width}%` }} />
+        </div>
         </div>
       </div>
       <div className="text-right text-sm tabular-nums">

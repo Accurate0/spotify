@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO item_meta (uri, status, attempts, last_error) VALUES ($1, $2, 1, $3)\n         ON CONFLICT (uri) DO UPDATE SET\n            status = EXCLUDED.status, attempts = item_meta.attempts + 1,\n            last_error = EXCLUDED.last_error, fetched_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b02f42ad9a0d1ef77030238d437dd74617e7e5672754575f2faa8020303987be"
+}

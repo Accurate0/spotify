@@ -1,0 +1,84 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n               (SELECT count(*)::int FROM item_meta WHERE status = 'ok') AS \"tracks_enriched!\",\n               (SELECT count(*)::int FROM item_meta WHERE status = 'not_found') AS \"tracks_missing!\",\n               (SELECT count(*)::int FROM enrich_queue WHERE target = 'item') AS \"tracks_pending!\",\n               (SELECT count(*)::int FROM spotify_artists WHERE status = 'ok') AS \"artists_enriched!\",\n               (SELECT count(*)::int FROM enrich_queue WHERE target = 'artist') AS \"artists_pending!\",\n               ((SELECT count(*) FROM spotify_albums WHERE image_key IS NOT NULL)\n                 + (SELECT count(*) FROM spotify_artists WHERE image_key IS NOT NULL))::int AS \"artwork!\",\n               (SELECT coalesce(sum(p.ms_played) FILTER (WHERE m.uri IS NOT NULL)::float8\n                                / nullif(sum(p.ms_played), 0), 0)\n                FROM plays p LEFT JOIN item_meta m ON m.uri = p.item_uri AND m.status = 'ok') AS \"coverage!\",\n               (SELECT coalesce(sum(api_requests), 0)::int FROM enrich_runs\n                WHERE started_at > now() - interval '24 hours') AS \"requests!\",\n               (SELECT max(started_at) FROM enrich_runs) AS last_run,\n               (SELECT max(rate_limited_until) FROM enrich_runs WHERE rate_limited_until > now())\n                   AS rate_limited_until",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "tracks_enriched!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "tracks_missing!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "tracks_pending!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "artists_enriched!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "artists_pending!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "artwork!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "coverage!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "requests!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "last_run",
+        "type_info": "Timestamptz",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "rate_limited_until",
+        "type_info": "Timestamptz",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "b636ea3253f40b996720671f865bac52f5d82babdc6ef094ae00a331eb9d0e96"
+}

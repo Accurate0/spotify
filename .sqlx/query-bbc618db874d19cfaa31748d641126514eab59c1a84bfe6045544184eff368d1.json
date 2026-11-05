@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT item_uri, artist_name FROM item_artists\n             WHERE item_uri = ANY($1) ORDER BY item_uri, position",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "item_uri",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "item_artists",
+            "name": "item_uri"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "artist_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "item_artists",
+            "name": "artist_name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "bbc618db874d19cfaa31748d641126514eab59c1a84bfe6045544184eff368d1"
+}

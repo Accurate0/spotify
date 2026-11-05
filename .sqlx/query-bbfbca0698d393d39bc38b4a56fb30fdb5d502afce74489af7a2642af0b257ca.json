@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT b.name AS \"name!\", s.genres, s.image_key\n               FROM artist_by_name b JOIN spotify_artists s ON s.id = b.artist_id\n               WHERE b.name = ANY($1) AND s.status = 'ok'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "artist_by_name",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "genres",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "spotify_artists",
+            "name": "genres"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "image_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "spotify_artists",
+            "name": "image_key"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "bbfbca0698d393d39bc38b4a56fb30fdb5d502afce74489af7a2642af0b257ca"
+}

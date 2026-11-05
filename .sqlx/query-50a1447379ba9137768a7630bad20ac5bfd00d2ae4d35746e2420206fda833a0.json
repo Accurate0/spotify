@@ -1,0 +1,94 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT i.uri, i.kind, i.name, i.artist, i.album, al.release_year AS \"year!\"\n           FROM scoped_plays($1, $2, $3, $4, $5, $6, $7) p\n           JOIN item_meta m ON m.uri = p.item_uri\n           JOIN spotify_albums al ON al.id = m.album_id\n           JOIN items i ON i.uri = p.item_uri\n           WHERE al.release_year IS NOT NULL\n           ORDER BY al.release_date, i.uri\n           LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "uri",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "items",
+            "name": "uri"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "kind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "items",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "items",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "artist",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "items",
+            "name": "artist"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "album",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "items",
+            "name": "album"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "year!",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "spotify_albums",
+            "name": "release_year"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8Array",
+        "Timestamptz",
+        "Timestamptz",
+        "TextArray",
+        "Int4",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "50a1447379ba9137768a7630bad20ac5bfd00d2ae4d35746e2420206fda833a0"
+}

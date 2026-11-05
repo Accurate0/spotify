@@ -1,0 +1,62 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT m.duration_ms, m.explicit, a.release_year, a.image_key\n         FROM item_meta m JOIN spotify_albums a ON a.id = m.album_id\n         WHERE m.uri = 'spotify:track:t1'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "duration_ms",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "item_meta",
+            "name": "duration_ms"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "explicit",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "item_meta",
+            "name": "explicit"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "release_year",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "spotify_albums",
+            "name": "release_year"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "image_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "spotify_albums",
+            "name": "image_key"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "abe4f623c8425c2eed4c4a3752670f0b180f4fbf5ecb740a2cb4cd641f2b0951"
+}

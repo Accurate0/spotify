@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<8e7f079aa78d7e7f65ae6f2a14d2224a>>
+ * @generated SignedSource<<2b8573587ecfb39ed65d42d12c2ef118>>
  * @lightSyntaxTransform
  */
 
@@ -164,6 +164,13 @@ return {
                         "alias": null,
                         "args": null,
                         "kind": "ScalarField",
+                        "name": "imageUrl",
+                        "storageKey": null
+                      },
+                      {
+                        "alias": null,
+                        "args": null,
+                        "kind": "ScalarField",
                         "name": "__typename",
                         "storageKey": null
                       }
@@ -225,12 +232,12 @@ return {
     ]
   },
   "params": {
-    "cacheID": "597fe1d64ba8b2d2581df948cb7f90ee",
+    "cacheID": "5a6829cf1f4b0be9bf8b2baf50b58bab",
     "id": null,
     "metadata": {},
     "name": "TopPageArtistsQuery",
     "operationKind": "query",
-    "text": "query TopPageArtistsQuery(\n  $filter: StatsFilter!\n  $by: RankBy!\n) {\n  ...TopPageArtists_query_9zxt2\n}\n\nfragment TopPageArtists_query_9zxt2 on Query {\n  stats(filter: $filter) {\n    topArtists(first: 50, by: $by) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          name\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
+    "text": "query TopPageArtistsQuery(\n  $filter: StatsFilter!\n  $by: RankBy!\n) {\n  ...TopPageArtists_query_9zxt2\n}\n\nfragment TopPageArtists_query_9zxt2 on Query {\n  stats(filter: $filter) {\n    topArtists(first: 50, by: $by) {\n      edges {\n        rank\n        plays\n        minutesPlayed\n        node {\n          id\n          name\n          imageUrl\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
   }
 };
 })();

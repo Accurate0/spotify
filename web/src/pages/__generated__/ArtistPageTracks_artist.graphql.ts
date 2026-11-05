@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<d597ef039d55355af1b4755b6c350caa>>
+ * @generated SignedSource<<c30cb9340d3eef8ec13a95892bc23180>>
  * @lightSyntaxTransform
  */
 
@@ -19,6 +19,7 @@ export type ArtistPageTracks_artist$data = {
           readonly album: {
             readonly name: string;
           } | null | undefined;
+          readonly artworkUrl: string | null | undefined;
           readonly id: string;
           readonly name: string | null | undefined;
           readonly uri: string;
@@ -176,6 +177,13 @@ return {
                     {
                       "alias": null,
                       "args": null,
+                      "kind": "ScalarField",
+                      "name": "artworkUrl",
+                      "storageKey": null
+                    },
+                    {
+                      "alias": null,
+                      "args": null,
                       "concreteType": "Album",
                       "kind": "LinkedField",
                       "name": "album",
@@ -243,6 +251,6 @@ return {
 };
 })();
 
-(node as any).hash = "2b9b952f6f59aef0a7667508fc37f819";
+(node as any).hash = "971b70aa0aaabfe6bcc399d023066317";
 
 export default node;

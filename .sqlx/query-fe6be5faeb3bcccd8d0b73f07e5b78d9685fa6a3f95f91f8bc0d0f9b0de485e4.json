@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE spotify_albums SET image_key = $2 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fe6be5faeb3bcccd8d0b73f07e5b78d9685fa6a3f95f91f8bc0d0f9b0de485e4"
+}

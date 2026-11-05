@@ -26,6 +26,11 @@ opentelemetry-otlp = { workspace = true }
 opentelemetry_sdk = { workspace = true }
 opentelemetry-semantic-conventions = { workspace = true }
 axum-tracing-opentelemetry = { workspace = true }
+reqwest-middleware = { workspace = true }
+reqwest-tracing = { workspace = true }
+futures-util = { workspace = true }
+tracing-futures = { workspace = true }
+async-trait = { workspace = true }
 async-graphql = { version = "7.2.1", features = ["chrono", "tempfile", "dataloader", "opentelemetry"] }
 async-graphql-axum = "7.2.1"
 axum = "0.8.9"

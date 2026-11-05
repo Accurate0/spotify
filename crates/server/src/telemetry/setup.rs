@@ -88,23 +88,30 @@ fn external_tracer(ingest_url: String) -> Tracer {
 }
 
 /// Spans handed to the exporter: perf noise from the exporter and SDK is kept off the wire
-/// unless debugging, nothing else is elided.
+/// unless debugging, nothing else is elided. `sqlx::query` events ride along at DEBUG so db
+/// work shows up under each span, dataloader plumbing is reduced to errors only.
 fn exporter_filter(exporter_level: LevelFilter) -> Targets {
     Targets::default()
         .with_target("otel::tracing", Level::TRACE)
         .with_target("opentelemetry_sdk", exporter_level)
+        .with_target("sqlx::query", Level::DEBUG)
+        .with_target("async_graphql::dataloader", Level::WARN)
         .with_default(Level::INFO)
 }
 
-/// Console output, `RUST_LOG` (default `info`). The exporter level doesn't suppress what you
-/// asked for on the terminal.
+/// Console output, `RUST_LOG` (default `info`). Query events are always kept off the terminal,
+/// as home-gateway does; the exporter level doesn't suppress what you asked for.
 fn console_layer<S>() -> impl Layer<S>
 where
     S: tracing::Subscriber + for<'span> tracing_subscriber::registry::LookupSpan<'span>,
 {
     tracing_subscriber::fmt::layer()
         .with_ansi(true)
-        .with_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()))
+        .with_filter(
+            EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "info".into())
+                .add_directive("sqlx::query=off".parse().expect("static directive")),
+        )
 }
 
 /// Installs the global subscriber. Call once, before anything logs. With `OTEL_TRACING_URL`

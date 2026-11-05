@@ -4,6 +4,8 @@
 use std::time::{Duration, Instant};
 
 use reqwest::StatusCode;
+use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use reqwest_tracing::TracingMiddleware;
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
 use tokio::sync::Mutex;
@@ -30,7 +32,7 @@ pub enum Fetch<T> {
 }
 
 pub struct SpotifyClient {
-    http: reqwest::Client,
+    http: ClientWithMiddleware,
     config: SpotifyConfig,
     token: Mutex<Option<(String, Instant)>>,
     /// API requests sent, including token refreshes and retries; counts toward the budget.
@@ -101,11 +103,15 @@ pub struct Episode {
 impl SpotifyClient {
     pub fn new(config: SpotifyConfig) -> Self {
         Self {
-            http: reqwest::Client::builder()
-                .timeout(Duration::from_secs(20))
-                .user_agent("spotify-export-enrich")
-                .build()
-                .unwrap_or_default(),
+            http: ClientBuilder::new(
+                reqwest::Client::builder()
+                    .timeout(Duration::from_secs(20))
+                    .user_agent("spotify-export-enrich")
+                    .build()
+                    .unwrap_or_default(),
+            )
+            .with(TracingMiddleware::default())
+            .build(),
             config,
             token: Mutex::new(None),
             requests: Default::default(),

@@ -50,7 +50,9 @@ pub use query::QueryRoot;
 pub type AppSchema = Schema<QueryRoot, MutationRoot, EmptySubscription>;
 
 pub fn builder() -> SchemaBuilder<QueryRoot, MutationRoot, EmptySubscription> {
-    Schema::build(QueryRoot, MutationRoot, EmptySubscription).enable_federation()
+    Schema::build(QueryRoot, MutationRoot, EmptySubscription)
+        .enable_federation()
+        .extension(crate::telemetry::graphql::Tracing)
 }
 
 /// The schema with its data: the pool and batch loaders (uncached, so no stale reads).

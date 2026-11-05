@@ -35,6 +35,22 @@ export function getAccessToken(): string | null {
   return currentUser?.access_token ?? null;
 }
 
+/** Display name of the signed-in user, or null when auth is disabled. */
+export function currentUserName(): string | null {
+  const profile = currentUser?.profile;
+  return profile?.name ?? profile?.preferred_username ?? null;
+}
+
+export async function signOut(): Promise<void> {
+  await userManager?.signoutRedirect();
+}
+
+/** Starts a fresh sign-in, e.g. after the API rejects an expired token. Navigates away. */
+export async function signInAgain(): Promise<never> {
+  await userManager?.signinRedirect();
+  return new Promise<never>(() => {});
+}
+
 // Resolves once a valid access token is held (immediately when auth is disabled), driving
 // the redirect flow when needed.
 export async function ensureAuthenticated(): Promise<void> {

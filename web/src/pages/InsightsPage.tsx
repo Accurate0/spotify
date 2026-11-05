@@ -118,6 +118,8 @@ const regions = new Intl.DisplayNames(undefined, { type: "region" });
 
 /** "AU" → "Australia"; leaves anything Intl doesn't know (e.g. "ZZ") as is. */
 function countryName(code: string): string {
+  // Spotify uses ZZ when it couldn't tell.
+  if (code === "ZZ") return "Unknown";
   try {
     return regions.of(code) ?? code;
   } catch {
@@ -400,10 +402,9 @@ export default function InsightsPage() {
           <ArtistSkips most={data.skips.mostSkippedArtists} least={data.skips.leastSkippedArtists} />
         </Section>
 
-        <Section title="Forgotten favourites" description="Big artists with nothing in the last year of this range">
-          {s.forgottenArtists.edges.length === 0 ? (
-            <Empty />
-          ) : (
+        {/* Within a single year nothing can be a year stale, so skip the card when empty. */}
+        {s.forgottenArtists.edges.length > 0 && (
+          <Section title="Forgotten favourites" description="Big artists with nothing in the last year of this range">
             <ol className="divide-y">
               {s.forgottenArtists.edges.map(({ node: f }) => (
                 <Row
@@ -414,8 +415,8 @@ export default function InsightsPage() {
                 />
               ))}
             </ol>
-          )}
-        </Section>
+          </Section>
+        )}
 
         <Section title="Devices">
           <ShareList rows={s.device} />

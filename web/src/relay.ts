@@ -5,7 +5,7 @@ import {
   Store,
   type FetchFunction,
 } from "relay-runtime";
-import { getAccessToken } from "./auth";
+import { AUTH_DISABLED, getAccessToken, signInAgain } from "./auth";
 
 // Same-origin: in production the SPA and API share a host (the route sends /graphql to the
 // API); in dev Vite proxies /graphql to the local backend.
@@ -21,6 +21,13 @@ const fetchFn: FetchFunction = async (request, variables) => {
     },
     body: JSON.stringify({ query: request.text, variables }),
   });
+  if (resp.status === 401 && !AUTH_DISABLED) {
+    // Expired or revoked token: go back through Kanidm rather than showing an error.
+    await signInAgain();
+  }
+  if (resp.status === 403) {
+    throw new Error("Your account isn't allowed to use this app (spotify_users group).");
+  }
   if (!resp.ok) {
     throw new Error(`GraphQL request failed: ${resp.status}`);
   }

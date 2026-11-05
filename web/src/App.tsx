@@ -2,6 +2,9 @@ import { lazy, Suspense } from "react";
 import { NavLink, Navigate, Route, Routes, useLocation } from "react-router";
 import FilterBar from "./components/FilterBar";
 import FilterProvider from "./components/FilterProvider";
+import ErrorBoundary from "./components/ErrorBoundary";
+import EmptyState from "./components/EmptyState";
+import { AUTH_DISABLED, currentUserName, signOut } from "./auth";
 import { useFilter } from "./lib/filter";
 import { cn } from "@/lib/utils";
 
@@ -57,42 +60,65 @@ function Tabs() {
 /** Stats pages: filters on top, content dimmed (not replaced) while a change loads. */
 function StatsLayout({ children }: { children: React.ReactNode }) {
   const { isPending } = useFilter();
+  const { pathname, search } = useLocation();
+  const { years } = useFilter();
+  if (years.length === 0) {
+    return <EmptyState />;
+  }
+
   return (
     <>
       <FilterBar />
       <div className={cn("transition-opacity", isPending && "opacity-60")}>
-        <Suspense fallback={<Fallback />}>{children}</Suspense>
+        <ErrorBoundary resetKey={pathname + search}>
+          <Suspense fallback={<Fallback />}>{children}</Suspense>
+        </ErrorBoundary>
       </div>
     </>
   );
 }
 
 export default function App() {
+  const { pathname, search } = useLocation();
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <header className="mb-6">
+      <header className="mb-6 flex items-start justify-between gap-4">
         <h1 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">Listening</h1>
+        {!AUTH_DISABLED && (
+          <div className="text-muted-foreground flex items-center gap-3 pt-2 text-sm">
+            {currentUserName()}
+            <button
+              type="button"
+              onClick={() => void signOut()}
+              className="hover:text-foreground underline-offset-2 hover:underline"
+            >
+              Sign out
+            </button>
+          </div>
+        )}
       </header>
       <Tabs />
-      <FilterProvider>
-        <Routes>
-          <Route path="/" element={<StatsLayout><OverviewPage /></StatsLayout>} />
-          <Route path="/top" element={<Navigate to="/top/artists" replace />} />
-          <Route path="/top/:kind" element={<StatsLayout><TopPage /></StatsLayout>} />
-          <Route path="/insights" element={<StatsLayout><InsightsPage /></StatsLayout>} />
-          <Route path="/track/:uri" element={<StatsLayout><ItemPage /></StatsLayout>} />
-          <Route path="/artist/:name" element={<StatsLayout><ArtistPage /></StatsLayout>} />
-          <Route
-            path="/search"
-            element={
-              <Suspense fallback={<Fallback />}>
-                <SearchPage />
-              </Suspense>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </FilterProvider>
+      <ErrorBoundary resetKey={pathname + search}>
+        <FilterProvider>
+          <Routes>
+            <Route path="/" element={<StatsLayout><OverviewPage /></StatsLayout>} />
+            <Route path="/top" element={<Navigate to="/top/artists" replace />} />
+            <Route path="/top/:kind" element={<StatsLayout><TopPage /></StatsLayout>} />
+            <Route path="/insights" element={<StatsLayout><InsightsPage /></StatsLayout>} />
+            <Route path="/track/:uri" element={<StatsLayout><ItemPage /></StatsLayout>} />
+            <Route path="/artist/:name" element={<StatsLayout><ArtistPage /></StatsLayout>} />
+            <Route
+              path="/search"
+              element={
+                <Suspense fallback={<Fallback />}>
+                  <SearchPage />
+                </Suspense>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </FilterProvider>
+      </ErrorBoundary>
     </div>
   );
 }

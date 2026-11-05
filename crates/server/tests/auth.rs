@@ -3,7 +3,7 @@
 
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
-use spotify_server::auth::{AuthConfig, Authenticator};
+use spotify_server::auth::{AuthConfig, Authenticator, Provider};
 use sqlx::postgres::PgPoolOptions;
 use tower::ServiceExt;
 
@@ -13,8 +13,10 @@ fn app() -> axum::Router {
         .connect_lazy("postgres://unused@localhost/unused")
         .unwrap();
     let auth = Authenticator::new(AuthConfig {
-        issuer: "https://idm.example.test/oauth2/openid/spotify".to_owned(),
-        audience: "spotify".to_owned(),
+        providers: vec![Provider {
+            issuer: "https://idm.example.test/oauth2/openid/spotify".to_owned(),
+            audience: "spotify".to_owned(),
+        }],
         groups: vec!["spotify_users".to_owned()],
     });
     spotify_server::router(pool, Some(auth), None)

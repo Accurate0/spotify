@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use anyhow::Context;
 use clap::{Args, Parser, Subcommand};
-use spotify_server::auth::{AuthConfig, Authenticator};
+use spotify_server::auth::{AuthConfig, Authenticator, Provider};
 use spotify_server::enrich::artwork::ArtworkStore;
 use spotify_server::enrich::spotify::{SpotifyClient, SpotifyConfig};
 use spotify_server::enrich::{self, EnrichConfig};
@@ -55,6 +55,11 @@ struct ServeArgs {
 
     #[arg(long, env = "OIDC_AUDIENCE", default_value = "spotify")]
     oidc_audience: String,
+
+    /// Trusted issuers as `<issuer>=<audience>` (comma separated), e.g. this app's own client
+    /// and the `graph` federation router's. Replaces OIDC_ISSUER/OIDC_AUDIENCE when set.
+    #[arg(long, env = "OIDC_PROVIDERS", value_delimiter = ',')]
+    oidc_providers: Vec<Provider>,
 
     /// Groups allowed to use the API (comma separated); empty allows any signed-in user.
     #[arg(
@@ -148,9 +153,16 @@ async fn serve(database_url: Option<String>, args: ServeArgs) -> anyhow::Result<
         tracing::warn!("authentication disabled");
         None
     } else {
+        let providers = if args.oidc_providers.is_empty() {
+            vec![Provider {
+                issuer: args.oidc_issuer,
+                audience: args.oidc_audience,
+            }]
+        } else {
+            args.oidc_providers
+        };
         let auth = Authenticator::new(AuthConfig {
-            issuer: args.oidc_issuer,
-            audience: args.oidc_audience,
+            providers,
             groups: args
                 .oidc_groups
                 .into_iter()

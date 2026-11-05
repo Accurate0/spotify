@@ -1,6 +1,8 @@
 //! Kanidm OIDC bearer auth for /graphql. Tokens come from the SPA (oidc-client-ts) or the CLI
-//! (`ortzi spotify` passes its login token as SPOTIFY_TOKEN); both use the `spotify` public
-//! client, so they share an issuer and audience. Adapted from ai-gateway's authenticator.
+//! (`ortzi spotify` passes its login token as SPOTIFY_TOKEN), both on the `spotify` public
+//! client, or from the `graph` federation router, which forwards its own client's tokens. Each
+//! Kanidm client is its own issuer with its own keys, so a token is matched to a provider by its
+//! `iss` before it is verified. Adapted from ai-gateway's authenticator.
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -38,14 +40,40 @@ impl IntoResponse for AuthError {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct AuthConfig {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Provider {
     /// e.g. `https://idm.anurag.sh/oauth2/openid/spotify`.
     pub issuer: String,
     pub audience: String,
+}
+
+impl std::str::FromStr for Provider {
+    type Err = String;
+
+    /// `<issuer>=<audience>`, as listed in OIDC_PROVIDERS.
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (issuer, audience) = s
+            .rsplit_once('=')
+            .filter(|(issuer, audience)| !issuer.is_empty() && !audience.is_empty())
+            .ok_or_else(|| format!("expected <issuer>=<audience>, got {s:?}"))?;
+        Ok(Self {
+            issuer: issuer.to_owned(),
+            audience: audience.to_owned(),
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AuthConfig {
+    pub providers: Vec<Provider>,
     /// The caller must hold one of these groups (short name or SPN). Empty allows anyone the
-    /// issuer will sign for.
+    /// issuers will sign for.
     pub groups: Vec<String>,
+}
+
+#[derive(Deserialize)]
+struct Issuer {
+    iss: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -92,7 +120,12 @@ pub struct Authenticator {
 
 struct Inner {
     client: reqwest::Client,
-    config: AuthConfig,
+    groups: Vec<String>,
+    issuers: Vec<IssuerKeys>,
+}
+
+struct IssuerKeys {
+    provider: Provider,
     jwks_uri: String,
     userinfo_endpoint: String,
     keys: RwLock<BTreeMap<String, VerifyingKey>>,
@@ -102,7 +135,19 @@ impl Authenticator {
     const REFRESH_INTERVAL: Duration = Duration::from_secs(3600);
 
     pub fn new(config: AuthConfig) -> Self {
-        let base = config.issuer.trim_end_matches('/').to_owned();
+        let issuers = config
+            .providers
+            .into_iter()
+            .map(|provider| {
+                let base = provider.issuer.trim_end_matches('/').to_owned();
+                IssuerKeys {
+                    jwks_uri: format!("{base}/public_key.jwk"),
+                    userinfo_endpoint: format!("{base}/userinfo"),
+                    provider,
+                    keys: RwLock::new(BTreeMap::new()),
+                }
+            })
+            .collect();
         Self {
             inner: Arc::new(Inner {
                 client: reqwest::Client::builder()
@@ -110,24 +155,33 @@ impl Authenticator {
                     .user_agent("spotify-server")
                     .build()
                     .unwrap_or_default(),
-                jwks_uri: format!("{base}/public_key.jwk"),
-                userinfo_endpoint: format!("{base}/userinfo"),
-                config,
-                keys: RwLock::new(BTreeMap::new()),
+                groups: config.groups,
+                issuers,
             }),
         }
     }
 
+    fn issuer_for(&self, token: &str) -> Result<&IssuerKeys, AuthError> {
+        let Issuer { iss } = jsonwebtoken::dangerous::insecure_decode_claims(token)
+            .map_err(|e| AuthError::Unauthorized(format!("unreadable token claims: {e}")))?;
+        self.inner
+            .issuers
+            .iter()
+            .find(|i| i.provider.issuer == iss)
+            .ok_or_else(|| AuthError::Unauthorized(format!("untrusted issuer {iss}")))
+    }
+
     pub async fn authorize(&self, token: &str) -> Result<Claims, AuthError> {
-        let claims = self.verify(token).await?;
-        let allowed = &self.inner.config.groups;
+        let issuer = self.issuer_for(token)?;
+        let claims = self.verify(issuer, token).await?;
+        let allowed = &self.inner.groups;
         if allowed.is_empty() {
             return Ok(claims);
         }
 
         let held = match &claims.groups {
             Some(groups) => groups.clone(),
-            None => self.userinfo_groups(token).await?,
+            None => self.userinfo_groups(issuer, token).await?,
         };
         if !groups_match(&held, allowed) {
             return Err(AuthError::Forbidden(format!(
@@ -138,11 +192,15 @@ impl Authenticator {
         Ok(claims)
     }
 
-    async fn userinfo_groups(&self, token: &str) -> Result<Vec<String>, AuthError> {
+    async fn userinfo_groups(
+        &self,
+        issuer: &IssuerKeys,
+        token: &str,
+    ) -> Result<Vec<String>, AuthError> {
         let info: UserInfo = self
             .inner
             .client
-            .get(&self.inner.userinfo_endpoint)
+            .get(&issuer.userinfo_endpoint)
             .bearer_auth(token)
             .send()
             .await?
@@ -152,11 +210,31 @@ impl Authenticator {
         Ok(info.groups)
     }
 
+    /// Refreshes every issuer's keys, returning how many were loaded in all. One issuer failing
+    /// keeps its previous keys and doesn't stop the rest.
     pub async fn refresh(&self) -> Result<usize, AuthError> {
+        let mut total = 0;
+        let mut failure = None;
+        for issuer in &self.inner.issuers {
+            match self.refresh_issuer(issuer).await {
+                Ok(count) => total += count,
+                Err(e) => {
+                    tracing::warn!(issuer = issuer.provider.issuer, "jwks refresh failed: {e}");
+                    failure = Some(e);
+                }
+            }
+        }
+        match failure {
+            Some(e) if total == 0 => Err(e),
+            _ => Ok(total),
+        }
+    }
+
+    async fn refresh_issuer(&self, issuer: &IssuerKeys) -> Result<usize, AuthError> {
         let set: JwkSet = self
             .inner
             .client
-            .get(&self.inner.jwks_uri)
+            .get(&issuer.jwks_uri)
             .send()
             .await?
             .error_for_status()?
@@ -193,13 +271,17 @@ impl Authenticator {
         if keys.is_empty() {
             return Err(AuthError::Jwks(format!(
                 "no usable keys at {}",
-                self.inner.jwks_uri
+                issuer.jwks_uri
             )));
         }
 
         let count = keys.len();
-        *self.inner.keys.write().await = keys;
-        tracing::info!(keys = count, "refreshed jwks");
+        *issuer.keys.write().await = keys;
+        tracing::info!(
+            issuer = issuer.provider.issuer,
+            keys = count,
+            "refreshed jwks"
+        );
         Ok(count)
     }
 
@@ -215,24 +297,24 @@ impl Authenticator {
         }
     }
 
-    async fn verify(&self, token: &str) -> Result<Claims, AuthError> {
+    async fn verify(&self, issuer: &IssuerKeys, token: &str) -> Result<Claims, AuthError> {
         let header = decode_header(token)
             .map_err(|e| AuthError::Unauthorized(format!("unreadable token header: {e}")))?;
         let kid = header
             .kid
             .ok_or_else(|| AuthError::Unauthorized("token has no kid".to_owned()))?;
 
-        let mut key = self.inner.keys.read().await.get(&kid).cloned();
+        let mut key = issuer.keys.read().await.get(&kid).cloned();
         if key.is_none() {
             tracing::info!("unknown kid {kid}, refreshing jwks");
-            self.refresh().await?;
-            key = self.inner.keys.read().await.get(&kid).cloned();
+            self.refresh_issuer(issuer).await?;
+            key = issuer.keys.read().await.get(&kid).cloned();
         }
         let key = key.ok_or_else(|| AuthError::Unauthorized(format!("no key for kid {kid}")))?;
 
         let mut validation = Validation::new(key.alg.unwrap_or(header.alg));
-        validation.set_issuer(&[&self.inner.config.issuer]);
-        validation.set_audience(&[&self.inner.config.audience]);
+        validation.set_issuer(&[&issuer.provider.issuer]);
+        validation.set_audience(&[&issuer.provider.audience]);
 
         decode::<Claims>(token, &key.key, &validation)
             .map(|data| data.claims)
@@ -277,20 +359,71 @@ mod tests {
         assert!(!groups_match(&[], &["spotify_users".to_owned()]));
     }
 
+    fn authenticator() -> Authenticator {
+        Authenticator::new(AuthConfig {
+            providers: vec![
+                "https://idm.example.test/oauth2/openid/spotify/=spotify"
+                    .parse()
+                    .unwrap(),
+                "https://idm.example.test/oauth2/openid/graph=graph"
+                    .parse()
+                    .unwrap(),
+            ],
+            groups: vec![],
+        })
+    }
+
+    fn token(iss: &str) -> String {
+        use base64::Engine;
+        let encode = |v: serde_json::Value| {
+            base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(v.to_string())
+        };
+        format!(
+            "{}.{}.sig",
+            encode(serde_json::json!({ "alg": "ES256", "kid": "k" })),
+            encode(serde_json::json!({ "iss": iss, "sub": "u" }))
+        )
+    }
+
     #[test]
     fn endpoints_derive_from_issuer() {
-        let auth = Authenticator::new(AuthConfig {
-            issuer: "https://idm.example.test/oauth2/openid/spotify/".to_owned(),
-            audience: "spotify".to_owned(),
-            groups: vec![],
-        });
+        let auth = authenticator();
+        let spotify = &auth.inner.issuers[0];
         assert_eq!(
-            auth.inner.jwks_uri,
+            spotify.jwks_uri,
             "https://idm.example.test/oauth2/openid/spotify/public_key.jwk"
         );
         assert_eq!(
-            auth.inner.userinfo_endpoint,
+            spotify.userinfo_endpoint,
             "https://idm.example.test/oauth2/openid/spotify/userinfo"
         );
+    }
+
+    #[test]
+    fn providers_parse_issuer_and_audience() {
+        assert_eq!(
+            "https://idm.example.test/oauth2/openid/graph=graph"
+                .parse::<Provider>()
+                .unwrap(),
+            Provider {
+                issuer: "https://idm.example.test/oauth2/openid/graph".to_owned(),
+                audience: "graph".to_owned(),
+            }
+        );
+        assert!("https://idm.example.test".parse::<Provider>().is_err());
+        assert!("https://idm.example.test=".parse::<Provider>().is_err());
+    }
+
+    #[test]
+    fn tokens_are_matched_to_their_issuer() {
+        let auth = authenticator();
+        let graph = auth
+            .issuer_for(&token("https://idm.example.test/oauth2/openid/graph"))
+            .unwrap();
+        assert_eq!(graph.provider.audience, "graph");
+        assert!(matches!(
+            auth.issuer_for(&token("https://elsewhere.test")),
+            Err(AuthError::Unauthorized(_))
+        ));
     }
 }

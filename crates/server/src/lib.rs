@@ -13,6 +13,7 @@ use axum::http::{StatusCode, header};
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::get;
 use axum::{Router, middleware};
+use axum_tracing_opentelemetry::middleware::OtelAxumLayer;
 use enrich::artwork::ArtworkStore;
 use sqlx::PgPool;
 use tower_http::limit::RequestBodyLimitLayer;
@@ -40,6 +41,9 @@ pub fn router(
         .route("/art/{kind}/{id}", get(artwork_image).with_state(artwork))
         .layer(RequestBodyLimitLayer::new(MAX_BODY_BYTES))
         .layer(TraceLayer::new_for_http())
+        // Extracts the supergraph's `traceparent` and opens a root span per request, so
+        // spotify's spans join the router's trace instead of starting fresh roots.
+        .layer(OtelAxumLayer::default())
 }
 
 /// Serves stored artwork: `/art/albums/<id>` or `/art/artists/<id>`. Keys never change once

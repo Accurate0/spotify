@@ -225,6 +225,16 @@ async fn enrich(database_url: Option<String>, args: EnrichArgs) -> anyhow::Resul
     }
 
     let report = enrich::run(&pool, &client, store.as_ref(), &config).await?;
-    tracing::info!(?report, "enrichment run finished");
+    tracing::info!(
+        api_requests = report.api_requests,
+        items = report.items_done,
+        artists = report.artists_done,
+        not_found = report.not_found,
+        failed = report.failed,
+        artwork = report.images,
+        rate_limited_until = ?report.rate_limited_until,
+        skipped = ?report.skipped,
+        "enrichment run finished"
+    );
     Ok(())
 }

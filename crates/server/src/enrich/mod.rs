@@ -115,6 +115,12 @@ pub async fn run(
         rate_limited_until,
     } = budget(pool).await?;
     let mut remaining = run_budget(config, used_last_24h);
+    tracing::info!(
+        budget = remaining,
+        used_last_24h,
+        daily = config.daily_requests,
+        "enrichment run starting"
+    );
 
     if let Some(until) = rate_limited_until {
         report.skipped = Some(format!("rate limited until {until}"));
@@ -125,9 +131,11 @@ pub async fn run(
         ));
     } else {
         let mut first = true;
+        let mut position = 0;
         'queue: while remaining > 0 {
             let entries = next_in_queue(pool, remaining.min(QUEUE_BATCH)).await?;
             if entries.is_empty() {
+                tracing::info!("queue empty, everything is enriched");
                 break;
             }
             for entry in entries {
@@ -152,6 +160,15 @@ pub async fn run(
                 .execute(pool)
                 .await?;
 
+                position += 1;
+                let result = match &outcome {
+                    Outcome::Item | Outcome::Artist => "ok",
+                    Outcome::NotFound => "not found",
+                    Outcome::Failed => "failed",
+                    Outcome::RateLimited(_) => "rate limited",
+                };
+                tracing::info!(n = position, remaining, kind = %entry.kind, id = %entry.id, result, "fetched");
+
                 match outcome {
                     Outcome::Item => report.items_done += 1,
                     Outcome::Artist => report.artists_done += 1,
@@ -168,6 +185,10 @@ pub async fn run(
                 }
             }
         }
+    }
+
+    if let Some(reason) = &report.skipped {
+        tracing::info!(%reason, "skipping spotify api calls this run");
     }
 
     if let Some(store) = store {
@@ -454,6 +475,7 @@ async fn download_artwork(
     .fetch_all(pool)
     .await?;
 
+    tracing::info!(pending = pending.len(), "downloading artwork");
     let mut stored = 0;
     for (i, image) in pending.iter().enumerate() {
         if i > 0 {
@@ -510,6 +532,9 @@ async fn download_artwork(
             .await?;
         }
         stored += 1;
+        if stored % 50 == 0 {
+            tracing::info!(stored, of = pending.len(), "artwork progress");
+        }
     }
     Ok(stored)
 }

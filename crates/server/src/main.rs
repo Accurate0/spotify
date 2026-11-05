@@ -10,7 +10,6 @@ use spotify_server::enrich::spotify::{SpotifyClient, SpotifyConfig};
 use spotify_server::enrich::{self, EnrichConfig};
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
-use tracing_subscriber::EnvFilter;
 
 #[derive(Parser)]
 #[command(about = "Spotify export API")]
@@ -138,9 +137,7 @@ async fn main() -> anyhow::Result<()> {
         return Ok(());
     }
 
-    tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()))
-        .init();
+    spotify_server::telemetry::setup::init();
 
     match cli.command.unwrap_or(Command::Serve) {
         Command::Serve => serve(cli.database_url, cli.serve).await,

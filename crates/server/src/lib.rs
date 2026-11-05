@@ -2,6 +2,7 @@ pub mod auth;
 pub mod enrich;
 pub mod graphql;
 pub mod import;
+pub mod telemetry;
 
 use async_graphql::http::GraphiQLSource;
 use async_graphql_axum::GraphQL;

@@ -30,20 +30,31 @@ impl ArtworkStore {
             return Ok(None);
         };
 
-        let region = Region::Custom {
-            region: var("S3_REGION").unwrap_or_else(|| "garage".to_owned()),
-            endpoint,
-        };
-        let credentials = Credentials::new(
+        Ok(Some(Self::s3(
+            &bucket,
+            &endpoint,
+            var("S3_REGION").as_deref().unwrap_or("garage"),
             var("S3_ACCESS_KEY_ID").as_deref(),
             var("S3_SECRET_ACCESS_KEY").as_deref(),
-            None,
-            None,
-            None,
-        )?;
-        Ok(Some(Self::S3(
-            Bucket::new(&bucket, region, credentials)?.with_path_style(),
-        )))
+        )?))
+    }
+
+    /// A path-style bucket (as Garage needs) at `endpoint`.
+    pub fn s3(
+        bucket: &str,
+        endpoint: &str,
+        region: &str,
+        access_key: Option<&str>,
+        secret_key: Option<&str>,
+    ) -> Result<Self, ArtworkError> {
+        let region = Region::Custom {
+            region: region.to_owned(),
+            endpoint: endpoint.to_owned(),
+        };
+        let credentials = Credentials::new(access_key, secret_key, None, None, None)?;
+        Ok(Self::S3(
+            Bucket::new(bucket, region, credentials)?.with_path_style(),
+        ))
     }
 
     pub fn memory() -> Self {

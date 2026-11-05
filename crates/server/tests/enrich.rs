@@ -324,3 +324,45 @@ async fn artwork_is_served_with_long_cache(pool: PgPool) {
         assert_eq!(response.status(), StatusCode::NOT_FOUND, "{path}");
     }
 }
+
+#[sqlx::test(migrations = "./migrations")]
+async fn unreachable_bucket_keeps_artwork_urls_for_a_later_run(pool: PgPool) {
+    let f = setup(pool, &[]).await;
+    let mock = spawn_mock().await;
+    // Nothing listens on port 1: every upload fails to connect, as when a network policy
+    // blocks the bucket.
+    let unreachable = ArtworkStore::s3(
+        "spotify-artwork",
+        "http://127.0.0.1:1",
+        "garage",
+        Some("k"),
+        Some("s"),
+    )
+    .unwrap();
+
+    let report = run(
+        &f.pool,
+        &client(&mock),
+        Some(&unreachable),
+        &config(50, 5000),
+    )
+    .await
+    .unwrap();
+    assert_eq!((report.items_done, report.images), (2, 0));
+
+    let pending = sqlx::query_scalar!(
+        r#"SELECT count(*) AS "count!" FROM spotify_albums
+           WHERE image_source_url IS NOT NULL AND image_key IS NULL"#
+    )
+    .fetch_one(&f.pool)
+    .await
+    .unwrap();
+    assert_eq!(pending, 2, "both album urls survive the failed uploads");
+
+    // Once the bucket works, the next run stores them.
+    let store = ArtworkStore::memory();
+    let later = run(&f.pool, &client(&mock), Some(&store), &config(50, 5000))
+        .await
+        .unwrap();
+    assert_eq!(later.images, 4);
+}

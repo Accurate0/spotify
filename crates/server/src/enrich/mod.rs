@@ -460,55 +460,56 @@ async fn download_artwork(
             tokio::time::sleep(config.image_interval).await;
         }
         let key = format!("{}/{}.jpg", image.kind, image.id);
-        let saved = match client.download(&image.url).await {
-            Ok(bytes) => store
-                .put(&key, &bytes, "image/jpeg")
-                .await
-                .map_err(|e| e.to_string()),
-            Err(e) => Err(e),
+
+        // A CDN URL that fails won't fix itself; forget it rather than retrying every run.
+        let bytes = match client.download(&image.url).await {
+            Ok(bytes) => bytes,
+            Err(error) => {
+                tracing::warn!(%key, %error, "artwork download failed, dropping its url");
+                if image.kind == "albums" {
+                    sqlx::query!(
+                        "UPDATE spotify_albums SET image_source_url = NULL WHERE id = $1",
+                        image.id
+                    )
+                    .execute(pool)
+                    .await?;
+                } else {
+                    sqlx::query!(
+                        "UPDATE spotify_artists SET image_source_url = NULL WHERE id = $1",
+                        image.id
+                    )
+                    .execute(pool)
+                    .await?;
+                }
+                continue;
+            }
         };
 
-        match (saved, image.kind.as_str()) {
-            (Ok(()), "albums") => {
-                sqlx::query!(
-                    "UPDATE spotify_albums SET image_key = $2 WHERE id = $1",
-                    image.id,
-                    key
-                )
-                .execute(pool)
-                .await?;
-                stored += 1;
-            }
-            (Ok(()), _) => {
-                sqlx::query!(
-                    "UPDATE spotify_artists SET image_key = $2 WHERE id = $1",
-                    image.id,
-                    key
-                )
-                .execute(pool)
-                .await?;
-                stored += 1;
-            }
-            // A broken CDN URL won't fix itself; forget it rather than retrying every run.
-            (Err(error), "albums") => {
-                tracing::warn!(%key, %error, "artwork download failed");
-                sqlx::query!(
-                    "UPDATE spotify_albums SET image_source_url = NULL WHERE id = $1",
-                    image.id
-                )
-                .execute(pool)
-                .await?;
-            }
-            (Err(error), _) => {
-                tracing::warn!(%key, %error, "artwork download failed");
-                sqlx::query!(
-                    "UPDATE spotify_artists SET image_source_url = NULL WHERE id = $1",
-                    image.id
-                )
-                .execute(pool)
-                .await?;
-            }
+        // The bucket being unreachable says nothing about the image: keep its url and stop
+        // for this run, so the next one retries.
+        if let Err(error) = store.put(&key, &bytes, "image/jpeg").await {
+            tracing::warn!(%key, %error, "artwork bucket unavailable, stopping downloads for this run");
+            break;
         }
+
+        if image.kind == "albums" {
+            sqlx::query!(
+                "UPDATE spotify_albums SET image_key = $2 WHERE id = $1",
+                image.id,
+                key
+            )
+            .execute(pool)
+            .await?;
+        } else {
+            sqlx::query!(
+                "UPDATE spotify_artists SET image_key = $2 WHERE id = $1",
+                image.id,
+                key
+            )
+            .execute(pool)
+            .await?;
+        }
+        stored += 1;
     }
     Ok(stored)
 }

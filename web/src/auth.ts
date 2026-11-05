@@ -41,8 +41,25 @@ export function currentUserName(): string | null {
   return profile?.name ?? profile?.preferred_username ?? null;
 }
 
+/** Where sign-out lands; this page never redirects to Kanidm on its own. */
+export const SIGNED_OUT_PATH = "/signed-out";
+
+/**
+ * Kanidm has no end-session endpoint (so signoutRedirect() can't work): revoke this app's
+ * tokens, forget the stored user and land on a page that doesn't sign straight back in.
+ * Kanidm's own login session survives, so signing in again from there is immediate.
+ */
 export async function signOut(): Promise<void> {
-  await userManager?.signoutRedirect();
+  if (!userManager) return;
+  try {
+    await userManager.revokeTokens();
+  } catch (e) {
+    // Still sign out locally; the tokens expire on their own.
+    console.warn("token revocation failed", e);
+  }
+  await userManager.removeUser();
+  currentUser = null;
+  window.location.assign(SIGNED_OUT_PATH);
 }
 
 /** Starts a fresh sign-in, e.g. after the API rejects an expired token. Navigates away. */
@@ -54,7 +71,7 @@ export async function signInAgain(): Promise<never> {
 // Resolves once a valid access token is held (immediately when auth is disabled), driving
 // the redirect flow when needed.
 export async function ensureAuthenticated(): Promise<void> {
-  if (!userManager) return;
+  if (!userManager || window.location.pathname === SIGNED_OUT_PATH) return;
 
   const params = new URLSearchParams(window.location.search);
   if (window.location.pathname === "/callback" && params.has("code")) {

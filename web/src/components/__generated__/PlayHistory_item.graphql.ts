@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<5ae32be636782f5586d81302ea81ae75>>
+ * @generated SignedSource<<db0f37a7f9531cd3d9c221574b66898c>>
  * @lightSyntaxTransform
  */
 
@@ -18,7 +18,7 @@ export type PlayHistory_item$data = {
           readonly account: {
             readonly displayName: string;
           };
-          readonly msPlayed: number;
+          readonly msPlayed: number | null | undefined;
           readonly skipped: boolean | null | undefined;
           readonly ts: string;
         };

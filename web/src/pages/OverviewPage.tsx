@@ -7,6 +7,7 @@ import TimelineChart, { type Bucket } from "@/components/TimelineChart";
 import Heatmap from "@/components/Heatmap";
 import Artwork from "@/components/Artwork";
 import RankRow from "@/components/RankRow";
+import RecentListens from "@/components/RecentListens";
 import { useFilter } from "@/lib/filter";
 import { artistPath, itemPath } from "@/lib/paths";
 
@@ -24,6 +25,7 @@ export default function OverviewPage() {
   const data = useLazyLoadQuery<OverviewPageQuery>(
     graphql`
       query OverviewPageQuery($filter: SpotifyStatsFilter!, $bucket: SpotifyTimeBucket!) {
+        ...RecentListens_query @arguments(filter: $filter)
         spotifyStats(filter: $filter) {
           summary {
             ...StatTiles_summary
@@ -136,6 +138,15 @@ export default function OverviewPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent listens</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <RecentListens query={data} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

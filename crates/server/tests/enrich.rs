@@ -298,7 +298,7 @@ async fn artwork_is_served_with_long_cache(pool: PgPool) {
         .put("albums/al1.jpg", b"jpeg", "image/jpeg")
         .await
         .unwrap();
-    let app = spotify_server::router(pool, None, Some(store));
+    let app = spotify_server::router(pool, None, Some(store), "https://spotify.test");
 
     let response = app
         .clone()

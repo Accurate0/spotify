@@ -23,16 +23,18 @@ use tower_http::trace::TraceLayer;
 const MAX_BODY_BYTES: usize = 64 * 1024 * 1024;
 
 /// The API. With `auth` set, every /v1/graphql request needs a valid Kanidm bearer token; `None`
-/// is for local development only. /health and /art (Spotify artwork, which `<img>` tags fetch
+/// is for local development only. Artwork URLs in responses are absolute, under `public_url`.
+/// /health and /art (Spotify artwork, which `<img>` tags fetch
 /// without a token) are always open.
 pub fn router(
     pool: PgPool,
     auth: Option<auth::Authenticator>,
     artwork: Option<Arc<ArtworkStore>>,
+    public_url: &str,
 ) -> Router {
     let mut api = Router::new().route(
         "/v1/graphql",
-        get(graphiql).post_service(GraphQL::new(graphql::schema(pool))),
+        get(graphiql).post_service(GraphQL::new(graphql::schema(pool, public_url))),
     );
     if let Some(auth) = auth {
         api = api.layer(middleware::from_fn_with_state(auth, auth::require_auth));

@@ -40,9 +40,18 @@ pub struct Item {
     pub album: Option<String>,
 }
 
-/// `/art/albums/<id>` for an artwork bucket key like `albums/<id>.jpg`.
-pub fn art_url(key: &str) -> String {
-    format!("/art/{}", key.trim_end_matches(".jpg"))
+/// The origin /art is served from, so artwork URLs resolve wherever the API is read from (the
+/// web app, the federation router's clients).
+pub struct PublicUrl(pub String);
+
+/// `<public url>/art/albums/<id>` for an artwork bucket key like `albums/<id>.jpg`.
+fn art_url(ctx: &Context<'_>, key: &str) -> async_graphql::Result<String> {
+    let PublicUrl(base) = ctx.data::<PublicUrl>()?;
+    Ok(format!(
+        "{}/art/{}",
+        base.trim_end_matches('/'),
+        key.trim_end_matches(".jpg")
+    ))
 }
 
 impl Item {
@@ -106,11 +115,11 @@ impl Item {
 
     /// Album (or podcast show) artwork, once enrichment has stored it.
     async fn artwork_url(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<String>> {
-        Ok(self
-            .meta(ctx)
+        self.meta(ctx)
             .await?
             .and_then(|m| m.album_image_key)
-            .map(|key| art_url(&key)))
+            .map(|key| art_url(ctx, &key))
+            .transpose()
     }
 
     /// Whether Spotify Web API metadata has been fetched for this item.
@@ -190,11 +199,11 @@ impl Artist {
     }
 
     async fn image_url(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<String>> {
-        Ok(self
-            .meta(ctx)
+        self.meta(ctx)
             .await?
             .and_then(|m| m.image_key)
-            .map(|key| art_url(&key)))
+            .map(|key| art_url(ctx, &key))
+            .transpose()
     }
 }
 
@@ -225,8 +234,11 @@ impl Album {
         self.artist.clone().map(|name| Artist { name })
     }
 
-    async fn artwork_url(&self) -> Option<String> {
-        self.artwork_key.as_deref().map(art_url)
+    async fn artwork_url(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<String>> {
+        self.artwork_key
+            .as_deref()
+            .map(|key| art_url(ctx, key))
+            .transpose()
     }
 
     async fn release_year(&self) -> Option<i32> {

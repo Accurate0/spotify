@@ -103,7 +103,10 @@ async fn setup(pool: PgPool) -> (Fixture, AppSchema) {
         )
         .await;
 
-    (f, spotify_server::graphql::schema(pool))
+    (
+        f,
+        spotify_server::graphql::schema(pool, "https://spotify.test"),
+    )
 }
 
 async fn run(schema: &AppSchema, query: &str, variables: Value) -> Value {
@@ -581,7 +584,7 @@ async fn enriched_stats(pool: PgPool) {
 
     assert_eq!(
         stats["topAlbums"]["edges"][0]["node"],
-        json!({"name": "Alpha album", "artworkUrl": "/art/albums/al_a", "releaseYear": 1999})
+        json!({"name": "Alpha album", "artworkUrl": "https://spotify.test/art/albums/al_a", "releaseYear": 1999})
     );
     let timeline = stats["genreTimeline"].as_array().unwrap();
     assert_eq!(timeline.len(), 3);
@@ -590,10 +593,10 @@ async fn enriched_stats(pool: PgPool) {
     assert_eq!(
         data["spotifyItem"],
         json!({
-            "artworkUrl": "/art/albums/al_a", "durationMs": 240000, "explicit": true,
+            "artworkUrl": "https://spotify.test/art/albums/al_a", "durationMs": 240000, "explicit": true,
             "releaseYear": 1999, "releaseDate": "1999-03-14", "enriched": true,
             "artists": [{"name": "Alpha"}, {"name": "Guest"}],
-            "album": {"artworkUrl": "/art/albums/al_a", "releaseYear": 1999},
+            "album": {"artworkUrl": "https://spotify.test/art/albums/al_a", "releaseYear": 1999},
         })
     );
     assert_eq!(
@@ -602,7 +605,7 @@ async fn enriched_stats(pool: PgPool) {
     );
     assert_eq!(
         data["spotifyArtist"],
-        json!({"genres": ["indie", "pop"], "imageUrl": "/art/artists/ar_alpha"})
+        json!({"genres": ["indie", "pop"], "imageUrl": "https://spotify.test/art/artists/ar_alpha"})
     );
     // The episode is the only item left; every credited artist is fetched.
     assert_eq!(

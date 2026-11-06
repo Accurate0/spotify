@@ -56,14 +56,16 @@ pub fn builder() -> SchemaBuilder<QueryRoot, MutationRoot, EmptySubscription> {
         .extension(crate::telemetry::graphql::Tracing)
 }
 
-pub fn schema(pool: PgPool) -> AppSchema {
-    with_data(builder(), pool)
+/// `public_url` is the origin artwork URLs point at, e.g. `https://spotify.ortzi.cloud`.
+pub fn schema(pool: PgPool, public_url: &str) -> AppSchema {
+    with_data(builder(), pool, public_url)
 }
 
 /// Attaches the pool and batch loaders (uncached, so no stale reads).
 fn with_data<Q, M>(
     builder: SchemaBuilder<Q, M, EmptySubscription>,
     pool: PgPool,
+    public_url: &str,
 ) -> Schema<Q, M, EmptySubscription>
 where
     Q: async_graphql::ObjectType + 'static,
@@ -90,6 +92,7 @@ where
             loaders::ArtistMetaLoader(pool.clone()),
             tokio::spawn,
         ))
+        .data(catalog::PublicUrl(public_url.to_owned()))
         .data(pool)
         .finish()
 }

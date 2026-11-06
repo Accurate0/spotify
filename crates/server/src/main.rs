@@ -68,6 +68,14 @@ struct ServeArgs {
         default_value = "spotify_users"
     )]
     oidc_groups: Vec<String>,
+
+    /// The origin /art is reachable at, for absolute artwork URLs.
+    #[arg(
+        long,
+        env = "PUBLIC_URL",
+        default_value = "https://spotify.ortzi.cloud"
+    )]
+    public_url: String,
 }
 
 #[derive(Args)]
@@ -184,11 +192,14 @@ async fn serve(database_url: Option<String>, args: ServeArgs) -> anyhow::Result<
     let listener = tokio::net::TcpListener::bind(args.listen).await?;
     tracing::info!(addr = %args.listen, "listening");
 
-    axum::serve(listener, spotify_server::router(pool, auth, artwork))
-        .with_graceful_shutdown(async {
-            let _ = tokio::signal::ctrl_c().await;
-        })
-        .await?;
+    axum::serve(
+        listener,
+        spotify_server::router(pool, auth, artwork, &args.public_url),
+    )
+    .with_graceful_shutdown(async {
+        let _ = tokio::signal::ctrl_c().await;
+    })
+    .await?;
 
     Ok(())
 }

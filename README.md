@@ -17,7 +17,7 @@ Imports Spotify data exports into Postgres and serves stats over GraphQL.
 docker compose up -d --wait db
 export DATABASE_URL=postgres://postgres:test@localhost:5433/spotify
 
-AUTH_DISABLED=true cargo run -p spotify-server   # GraphiQL at http://localhost:8000/v1/graphql
+AUTH_DISABLED=true PUBLIC_URL=http://localhost:8000 cargo run -p spotify-server   # GraphiQL at http://localhost:8000/v1/graphql
 
 export SPOTIFY_URL=http://localhost:8000
 cargo run -p spotify-cli -- accounts add me
@@ -68,7 +68,8 @@ the API + SPA behind one route (`/v1/graphql`, `/health` → `spotify-api`; `/` 
 ## Spotify Web API enrichment
 
 `spotify-server enrich` fills in durations, release dates, credited artists, genres and
-artwork (stored in the Garage bucket, served at `/art/...`), most-listened first. In
+artwork (stored in the Garage bucket, served at `/art/...`; the API returns these as absolute
+URLs under `PUBLIC_URL`, default `https://spotify.ortzi.cloud`), most-listened first. In
 production it runs every 15 minutes as the `spotify-enrich` CronJob. The app is in Spotify's
 Development Mode (one request per item, no batch endpoints), so it is deliberately slow:
 

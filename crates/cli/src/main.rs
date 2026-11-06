@@ -2,6 +2,7 @@ mod client;
 mod graphql;
 mod import;
 mod insights;
+mod link;
 mod stats;
 
 use std::path::PathBuf;
@@ -48,6 +49,12 @@ enum Command {
         /// Only show what would be uploaded.
         #[arg(long)]
         dry_run: bool,
+    },
+    /// Let the server fetch an account's recently played tracks from Spotify, until the next
+    /// export covers them. Opens Spotify's sign-in in the browser.
+    Link {
+        /// Account slug.
+        account: String,
     },
     /// Totals: listening time, plays, tracks, artists, skip rate.
     Summary {
@@ -161,8 +168,15 @@ async fn main() -> anyhow::Result<()> {
                 println!("no accounts, add one with `spotify accounts add <slug>`");
             }
             for account in accounts {
+                let link = match account.spotify_link {
+                    Some(link) if link.revoked_at.is_some() => {
+                        format!("  link revoked, run `spotify link {}`", account.slug)
+                    }
+                    Some(link) => format!("  linked to {}", link.spotify_user_id),
+                    None => String::new(),
+                };
                 println!(
-                    "{:<12} {:<24} {:>8} plays  {}",
+                    "{:<12} {:<24} {:>8} plays  {}{link}",
                     account.slug,
                     account.display_name,
                     account.play_count,
@@ -190,6 +204,7 @@ async fn main() -> anyhow::Result<()> {
             account,
             dry_run,
         } => import::run(&client, &account, &path, dry_run).await?,
+        Command::Link { account } => link::run(&client, &account).await?,
         Command::Summary { filter } => stats::summary(&client, &filter).await?,
         Command::Top {
             kind,

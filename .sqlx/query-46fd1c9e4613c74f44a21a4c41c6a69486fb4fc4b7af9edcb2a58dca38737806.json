@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT account_id AS \"account_id!\", ts AS \"ts!\", item_uri, name, artist,\n                      ms_played AS \"ms_played!\", skipped, is_extended AS \"is_extended!\"\n               FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)\n               ORDER BY ts DESC\n               LIMIT $8 OFFSET $9",
+  "query": "SELECT account_id AS \"account_id!\", ts AS \"ts!\", item_uri, name, artist,\n                      ms_played, skipped, is_extended AS \"is_extended!\", source AS \"source!\"\n               FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)\n               WHERE cardinality($10::text[]) = 0 OR source = ANY($10)\n               ORDER BY ts DESC\n               LIMIT $8 OFFSET $9",
   "describe": {
     "columns": [
       {
@@ -35,7 +35,7 @@
       },
       {
         "ordinal": 5,
-        "name": "ms_played!",
+        "name": "ms_played",
         "type_info": "Int4",
         "origin": "Expression"
       },
@@ -50,6 +50,12 @@
         "name": "is_extended!",
         "type_info": "Bool",
         "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "source!",
+        "type_info": "Text",
+        "origin": "Expression"
       }
     ],
     "parameters": {
@@ -62,7 +68,8 @@
         "Text",
         "Text",
         "Int8",
-        "Int8"
+        "Int8",
+        "TextArray"
       ]
     },
     "nullable": [
@@ -73,8 +80,9 @@
       null,
       null,
       null,
+      null,
       null
     ]
   },
-  "hash": "caa569bf1c109c71b4767cd0d4e5a6b0a7fd5cca13c4ccada7818284ae82732c"
+  "hash": "46fd1c9e4613c74f44a21a4c41c6a69486fb4fc4b7af9edcb2a58dca38737806"
 }

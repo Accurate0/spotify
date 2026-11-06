@@ -304,63 +304,73 @@ async fn process(
         },
         _ => match client.track(id).await {
             Fetch::Ok(track) => {
-                let image = largest_image(&track.album.images).map(|i| i.url.clone());
                 let mut tx = pool.begin().await?;
-                if let Some(album_id) = &track.album.id {
-                    upsert_album(
-                        &mut tx,
-                        album_id,
-                        &track.album.name,
-                        track.album.album_type.as_deref().unwrap_or("album"),
-                        track.album.release_date.as_deref(),
-                        image,
-                    )
-                    .await?;
-                }
-                sqlx::query!(
-                    "INSERT INTO item_meta (uri, duration_ms, explicit, album_id, status)
-                     VALUES ($1, $2, $3, $4, 'ok')
-                     ON CONFLICT (uri) DO UPDATE SET
-                        duration_ms = EXCLUDED.duration_ms, explicit = EXCLUDED.explicit,
-                        album_id = EXCLUDED.album_id, status = 'ok', last_error = NULL,
-                        fetched_at = now()",
-                    entry.id,
-                    track.duration_ms,
-                    track.explicit,
-                    track.album.id,
-                )
-                .execute(&mut *tx)
-                .await?;
-
-                sqlx::query!("DELETE FROM item_artists WHERE item_uri = $1", entry.id)
-                    .execute(&mut *tx)
-                    .await?;
-                let credited: Vec<_> = track
-                    .artists
-                    .iter()
-                    .filter_map(|a| Some((a.id.clone()?, a.name.clone())))
-                    .collect();
-                let positions: Vec<i32> = (0..credited.len() as i32).collect();
-                let ids: Vec<String> = credited.iter().map(|(id, _)| id.clone()).collect();
-                let names: Vec<String> = credited.iter().map(|(_, name)| name.clone()).collect();
-                sqlx::query!(
-                    "INSERT INTO item_artists (item_uri, position, artist_id, artist_name)
-                     SELECT $1, u.position, u.artist_id, u.artist_name
-                     FROM UNNEST($2::int[], $3::text[], $4::text[])
-                        AS u(position, artist_id, artist_name)",
-                    entry.id,
-                    &positions,
-                    &ids,
-                    &names,
-                )
-                .execute(&mut *tx)
-                .await?;
+                store_track(&mut tx, &entry.id, &track).await?;
                 tx.commit().await?;
                 Ok(Outcome::Item)
             }
             other => item_failure(pool, &entry.id, other).await,
         },
     }
+}
+
+/// Stores a track's duration, album and credited artists, as fetched from the Web API.
+pub(crate) async fn store_track(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    uri: &str,
+    track: &spotify::Track,
+) -> sqlx::Result<()> {
+    let image = largest_image(&track.album.images).map(|i| i.url.clone());
+    if let Some(album_id) = &track.album.id {
+        upsert_album(
+            tx,
+            album_id,
+            &track.album.name,
+            track.album.album_type.as_deref().unwrap_or("album"),
+            track.album.release_date.as_deref(),
+            image,
+        )
+        .await?;
+    }
+    sqlx::query!(
+        "INSERT INTO item_meta (uri, duration_ms, explicit, album_id, status)
+             VALUES ($1, $2, $3, $4, 'ok')
+             ON CONFLICT (uri) DO UPDATE SET
+                duration_ms = EXCLUDED.duration_ms, explicit = EXCLUDED.explicit,
+                album_id = EXCLUDED.album_id, status = 'ok', last_error = NULL,
+                fetched_at = now()",
+        uri,
+        track.duration_ms,
+        track.explicit,
+        track.album.id,
+    )
+    .execute(&mut **tx)
+    .await?;
+
+    sqlx::query!("DELETE FROM item_artists WHERE item_uri = $1", uri)
+        .execute(&mut **tx)
+        .await?;
+    let credited: Vec<_> = track
+        .artists
+        .iter()
+        .filter_map(|a| Some((a.id.clone()?, a.name.clone())))
+        .collect();
+    let positions: Vec<i32> = (0..credited.len() as i32).collect();
+    let ids: Vec<String> = credited.iter().map(|(id, _)| id.clone()).collect();
+    let names: Vec<String> = credited.iter().map(|(_, name)| name.clone()).collect();
+    sqlx::query!(
+        "INSERT INTO item_artists (item_uri, position, artist_id, artist_name)
+             SELECT $1, u.position, u.artist_id, u.artist_name
+             FROM UNNEST($2::int[], $3::text[], $4::text[])
+                AS u(position, artist_id, artist_name)",
+        uri,
+        &positions,
+        &ids,
+        &names,
+    )
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
 }
 
 async fn upsert_album(

@@ -1,0 +1,91 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO spotify_links (account_id, spotify_user_id, refresh_token, scope)\n         VALUES ($1, $2, $3, $4)\n         ON CONFLICT (account_id) DO UPDATE SET\n            refresh_token = EXCLUDED.refresh_token,\n            scope = EXCLUDED.scope,\n            linked_at = now(),\n            revoked_at = NULL,\n            last_played_at = CASE\n                WHEN spotify_links.spotify_user_id = EXCLUDED.spotify_user_id\n                THEN spotify_links.last_played_at END,\n            spotify_user_id = EXCLUDED.spotify_user_id\n         RETURNING account_id, spotify_user_id, linked_at, last_played_at, last_polled_at,\n                   revoked_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "account_id",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "spotify_links",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "spotify_user_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "spotify_links",
+            "name": "spotify_user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "linked_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "spotify_links",
+            "name": "linked_at"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "last_played_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "spotify_links",
+            "name": "last_played_at"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "last_polled_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "spotify_links",
+            "name": "last_polled_at"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "revoked_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "spotify_links",
+            "name": "revoked_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "a3d1d4cd43aef90a8a64ed2191fac87d0f48d498c2d0f3dc2a14c5b898f8d761"
+}

@@ -25,6 +25,16 @@ impl QueryRoot {
         Ok(Account::by_slug(ctx.data::<PgPool>()?, &slug).await?)
     }
 
+    /// The Spotify app's client id, for the CLI to send users to Spotify's authorize page.
+    /// Null when the server has no Spotify credentials.
+    #[graphql(inaccessible)]
+    async fn spotify_client_id(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<String>> {
+        Ok(ctx
+            .data::<Option<crate::enrich::spotify::SpotifyConfig>>()?
+            .as_ref()
+            .map(|c| c.client_id.clone()))
+    }
+
     /// Listening stats across the filtered plays.
     async fn spotify_stats(
         &self,

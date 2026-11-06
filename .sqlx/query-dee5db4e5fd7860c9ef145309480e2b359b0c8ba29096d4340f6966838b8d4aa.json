@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT i.uri, i.kind, i.name, i.artist, i.album,\n                      count(*)::int AS \"plays!\", (sum(p.ms_played) / 60000)::int AS \"minutes!\"\n               FROM scoped_plays($1, $2, $3, $4, $5, $6, $7) p\n               JOIN items i ON i.uri = p.item_uri\n               GROUP BY i.uri\n               ORDER BY CASE WHEN $8 THEN count(*) ELSE sum(p.ms_played) END DESC, i.uri\n               LIMIT $9 OFFSET $10",
+  "query": "SELECT i.uri, i.kind, i.name, i.artist, i.album, count(*)::int AS \"plays!\",\n                  avg(least(p.ms_played::float8 / m.duration_ms, 1)) AS \"completion!\"\n           FROM scoped_plays($1, $2, $3, $4, least($5, 0), $6, $7) p\n           JOIN item_meta m ON m.uri = p.item_uri AND m.status = 'ok' AND m.duration_ms > 0\n           JOIN items i ON i.uri = p.item_uri\n           WHERE p.ms_played IS NOT NULL\n           GROUP BY i.uri\n           HAVING count(*) >= $8\n           ORDER BY 7, count(*) DESC, i.uri\n           LIMIT $9",
   "describe": {
     "columns": [
       {
@@ -66,8 +66,8 @@
       },
       {
         "ordinal": 6,
-        "name": "minutes!",
-        "type_info": "Int4",
+        "name": "completion!",
+        "type_info": "Float8",
         "origin": "Expression"
       }
     ],
@@ -80,7 +80,6 @@
         "Int4",
         "Text",
         "Text",
-        "Bool",
         "Int8",
         "Int8"
       ]
@@ -95,5 +94,5 @@
       null
     ]
   },
-  "hash": "a68b71453433e2fc2e430100e8327f3bcb87dcbb3ecde903c6fda35594cfc78b"
+  "hash": "dee5db4e5fd7860c9ef145309480e2b359b0c8ba29096d4340f6966838b8d4aa"
 }

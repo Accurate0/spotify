@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT extract(isodow FROM ts AT TIME ZONE $8)::int AS \"day!\",\n                      extract(hour FROM ts AT TIME ZONE $8)::int AS \"hour!\",\n                      count(*)::int AS \"plays!\", (sum(ms_played) / 60000)::int AS \"minutes!\"\n               FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)\n               GROUP BY 1, 2\n               ORDER BY 1, 2",
+  "query": "SELECT extract(isodow FROM ts AT TIME ZONE $8)::int AS \"day!\",\n                      extract(hour FROM ts AT TIME ZONE $8)::int AS \"hour!\",\n                      count(*)::int AS \"plays!\", (coalesce(sum(ms_played), 0) / 60000)::int AS \"minutes!\"\n               FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)\n               GROUP BY 1, 2\n               ORDER BY 1, 2",
   "describe": {
     "columns": [
       {
@@ -47,5 +47,5 @@
       null
     ]
   },
-  "hash": "4bedf2b4064f1857e93e3bebee67a62ebc4be17f9820a4be82ba502545120dce"
+  "hash": "7a6aa3c00037d6cc8d88c0d84be9cf82e85a7bfc7bae3a58b13d2416afe2a81f"
 }

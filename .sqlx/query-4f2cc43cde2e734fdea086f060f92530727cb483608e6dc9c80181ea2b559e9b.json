@@ -1,0 +1,88 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT account_id, spotify_user_id, linked_at, last_played_at, last_polled_at,\n                    revoked_at\n             FROM spotify_links WHERE account_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "account_id",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "spotify_links",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "spotify_user_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "spotify_links",
+            "name": "spotify_user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "linked_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "spotify_links",
+            "name": "linked_at"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "last_played_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "spotify_links",
+            "name": "last_played_at"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "last_polled_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "spotify_links",
+            "name": "last_polled_at"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "revoked_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "spotify_links",
+            "name": "revoked_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "4f2cc43cde2e734fdea086f060f92530727cb483608e6dc9c80181ea2b559e9b"
+}

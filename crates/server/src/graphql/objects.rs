@@ -72,6 +72,33 @@ impl Account {
     }
 }
 
+pub struct SpotifyLink(pub crate::recent::Link);
+
+#[Object(name = "SpotifyLink")]
+impl SpotifyLink {
+    async fn spotify_user_id(&self) -> &str {
+        &self.0.spotify_user_id
+    }
+
+    async fn linked_at(&self) -> DateTime<Utc> {
+        self.0.linked_at
+    }
+
+    /// The newest recent play fetched.
+    async fn last_played_at(&self) -> Option<DateTime<Utc>> {
+        self.0.last_played_at
+    }
+
+    async fn last_polled_at(&self) -> Option<DateTime<Utc>> {
+        self.0.last_polled_at
+    }
+
+    /// When Spotify stopped accepting the link; link the account again to resume.
+    async fn revoked_at(&self) -> Option<DateTime<Utc>> {
+        self.0.revoked_at
+    }
+}
+
 #[Object(name = "SpotifyAccount")]
 impl Account {
     pub async fn id(&self) -> ID {
@@ -88,6 +115,15 @@ impl Account {
 
     async fn spotify_username(&self) -> Option<&str> {
         self.spotify_username.as_deref()
+    }
+
+    /// The Spotify user whose recently played tracks are fetched, if linked.
+    async fn spotify_link(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<SpotifyLink>> {
+        Ok(
+            crate::recent::Link::by_account(ctx.data::<PgPool>()?, self.id)
+                .await?
+                .map(SpotifyLink),
+        )
     }
 
     async fn play_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {

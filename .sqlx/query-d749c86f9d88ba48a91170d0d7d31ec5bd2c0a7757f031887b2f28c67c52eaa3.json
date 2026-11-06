@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n               avg(least(p.ms_played::float8 / nullif(m.duration_ms, 0), 1)) AS average,\n               avg(CASE WHEN m.duration_ms > 0\n                        THEN (p.ms_played >= m.duration_ms * 0.9)::int END)::float8 AS finished_share,\n               coalesce(count(m.duration_ms)::float8 / nullif(count(*), 0), 0) AS \"coverage!\"\n           FROM scoped_plays($1, $2, $3, $4, least($5, 0), $6, $7) p\n           LEFT JOIN item_meta m ON m.uri = p.item_uri AND m.status = 'ok'",
+  "query": "SELECT\n               avg(least(p.ms_played::float8 / nullif(m.duration_ms, 0), 1)) AS average,\n               avg(CASE WHEN m.duration_ms > 0\n                        THEN (p.ms_played >= m.duration_ms * 0.9)::int END)::float8 AS finished_share,\n               coalesce(count(m.duration_ms)::float8 / nullif(count(*), 0), 0) AS \"coverage!\"\n           FROM scoped_plays($1, $2, $3, $4, least($5, 0), $6, $7) p\n           LEFT JOIN item_meta m ON m.uri = p.item_uri AND m.status = 'ok'\n           WHERE p.ms_played IS NOT NULL",
   "describe": {
     "columns": [
       {
@@ -39,5 +39,5 @@
       null
     ]
   },
-  "hash": "0538ae25dc29b07c90d669f49d9a2a0e4e9860b2075cda948d41c675dc6ae43d"
+  "hash": "d749c86f9d88ba48a91170d0d7d31ec5bd2c0a7757f031887b2f28c67c52eaa3"
 }

@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO recent_plays (account_id, played_at, item_uri, context_uri)\n         SELECT $1, u.played_at, u.item_uri, u.context_uri\n         FROM UNNEST($2::timestamptz[], $3::text[], $4::text[])\n            AS u(played_at, item_uri, context_uri)\n         ON CONFLICT (account_id, played_at) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "TimestamptzArray",
+        "TextArray",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5630492dae895098293dbb3a4c5283d3197b405d3864bfd35f707d2389b130f7"
+}

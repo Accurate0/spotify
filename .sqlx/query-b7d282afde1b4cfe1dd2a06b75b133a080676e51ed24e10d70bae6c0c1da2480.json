@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT g AS \"genre!\",\n                  date_trunc($8, p.ts AT TIME ZONE $9) AT TIME ZONE $9 AS \"start!\",\n                  (sum(p.ms_played) / 60000)::int AS \"minutes!\"\n           FROM scoped_plays($1, $2, $3, $4, $5, $6, $7) p\n           JOIN item_artists ia ON ia.item_uri = p.item_uri AND ia.position = 0\n           JOIN spotify_artists sa ON sa.id = ia.artist_id\n           CROSS JOIN LATERAL unnest(sa.genres) AS g\n           WHERE g = ANY($10)\n           GROUP BY 1, 2\n           ORDER BY 2",
+  "query": "SELECT g AS \"genre!\",\n                  date_trunc($8, p.ts AT TIME ZONE $9) AT TIME ZONE $9 AS \"start!\",\n                  (coalesce(sum(p.ms_played), 0) / 60000)::int AS \"minutes!\"\n           FROM scoped_plays($1, $2, $3, $4, $5, $6, $7) p\n           JOIN item_artists ia ON ia.item_uri = p.item_uri AND ia.position = 0\n           JOIN spotify_artists sa ON sa.id = ia.artist_id\n           CROSS JOIN LATERAL unnest(sa.genres) AS g\n           WHERE g = ANY($10)\n           GROUP BY 1, 2\n           ORDER BY 2",
   "describe": {
     "columns": [
       {
@@ -42,5 +42,5 @@
       null
     ]
   },
-  "hash": "8d4ee970a3de16998df85fd93118097ac789479ce01bfcd0e32d44d99d8d3bcd"
+  "hash": "b7d282afde1b4cfe1dd2a06b75b133a080676e51ed24e10d70bae6c0c1da2480"
 }

@@ -82,3 +82,27 @@ spotify-server enrich --dry-run    # budget and the next items, no API calls
 SPOTIFY_CLIENT_ID=… SPOTIFY_CLIENT_SECRET=… spotify-server enrich --max-requests-per-run 10
 spotify enrichment                 # progress from the CLI
 ```
+
+## Recently played
+
+Exports arrive weeks after the plays, so `spotify-server recent` fills the gap from the Web
+API's [recently played tracks](https://developer.spotify.com/documentation/web-api/reference/get-recently-played),
+every 30 minutes as the `spotify-recent` CronJob. Each account links its Spotify user once:
+
+```sh
+ortzi spotify link me    # sign in as that account's Spotify user in the browser
+ortzi spotify accounts list
+```
+
+The CLI catches Spotify's redirect on `http://127.0.0.1:8975/callback` (registered in the
+Spotify app's redirect URIs; in Development Mode each Spotify user must also be added to the
+app's users) and the API exchanges the code for a refresh token, stored in `spotify_links`.
+
+- Spotify keeps only the last 50 plays, so polls must stay well under ~2.5h of listening apart.
+- Plays land in `recent_plays` with the track (enriched from the response) but no play length,
+  platform or reasons: `msPlayed` is null, and they pass the stats' minimum-length filter
+  (Spotify only lists plays past 30s).
+- `all_plays` hides them inside `extended_coverage`, like account-data plays, so when the next
+  export is imported its plays take over the period it covers. Plays carry a `source`
+  (`EXTENDED`, `BASIC` or `RECENT`), and `plays(sources: [...])` filters on it.
+- A revoked authorisation marks the link (`revokedAt`) and polling skips it until linked again.

@@ -1,8 +1,10 @@
-//! Minimal Spotify Web API client for enrichment: an app (client credentials) token and
-//! single-item lookups. Development Mode apps have no batch endpoints, so callers pace these.
+//! Minimal Spotify Web API client: an app (client credentials) token for enrichment's
+//! single-item lookups, or a user's token (authorization code + refresh token) for their
+//! recently played tracks. Development Mode apps have no batch endpoints, so callers pace these.
 
 use std::time::{Duration, Instant};
 
+use chrono::{DateTime, Utc};
 use reqwest::StatusCode;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_tracing::TracingMiddleware;
@@ -31,9 +33,34 @@ pub enum Fetch<T> {
     Failed(String),
 }
 
+/// What an access token is issued for.
+enum Grant {
+    /// The app itself (client credentials): catalogue lookups only.
+    App,
+    /// A user, through their refresh token, which Spotify may rotate on refresh.
+    User(Mutex<String>),
+}
+
+#[derive(Debug)]
+pub enum TokenError {
+    /// The user revoked access or the refresh token expired; they need to link again.
+    Revoked,
+    Failed(String),
+}
+
+impl std::fmt::Display for TokenError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Revoked => f.write_str("spotify authorisation was revoked"),
+            Self::Failed(e) => f.write_str(e),
+        }
+    }
+}
+
 pub struct SpotifyClient {
     http: ClientWithMiddleware,
     config: SpotifyConfig,
+    grant: Grant,
     token: Mutex<Option<(String, Instant)>>,
     /// API requests sent, including token refreshes and retries; counts toward the budget.
     pub requests: std::sync::atomic::AtomicI64,
@@ -43,6 +70,14 @@ pub struct SpotifyClient {
 struct TokenResponse {
     access_token: String,
     expires_in: u64,
+    /// User grants only.
+    refresh_token: Option<String>,
+    scope: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct TokenErrorResponse {
+    error: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -76,6 +111,44 @@ pub struct Track {
     pub artists: Vec<SimpleArtist>,
 }
 
+/// A track as embedded in other responses, e.g. recently played.
+#[derive(Debug, Deserialize)]
+pub struct FullTrack {
+    pub uri: String,
+    pub name: String,
+    #[serde(flatten)]
+    pub track: Track,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct User {
+    pub id: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PlayContext {
+    pub uri: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PlayHistory {
+    pub track: FullTrack,
+    pub played_at: DateTime<Utc>,
+    pub context: Option<PlayContext>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Cursors {
+    pub after: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RecentlyPlayed {
+    #[serde(default)]
+    pub items: Vec<PlayHistory>,
+    pub cursors: Option<Cursors>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct Artist {
     pub name: String,
@@ -101,7 +174,44 @@ pub struct Episode {
 }
 
 impl SpotifyClient {
+    /// An app client (client credentials).
     pub fn new(config: SpotifyConfig) -> Self {
+        Self::with_grant(config, Grant::App)
+    }
+
+    /// A client acting as the user `refresh_token` belongs to.
+    pub fn for_user(config: SpotifyConfig, refresh_token: String) -> Self {
+        Self::with_grant(config, Grant::User(Mutex::new(refresh_token)))
+    }
+
+    /// Exchanges an authorization code (from Spotify's authorize redirect to `redirect_uri`)
+    /// for a user client, returning it with the scopes granted.
+    pub async fn from_code(
+        config: SpotifyConfig,
+        code: &str,
+        redirect_uri: &str,
+    ) -> Result<(Self, String), TokenError> {
+        let client = Self::with_grant(config, Grant::User(Mutex::new(String::new())));
+        let body = client
+            .request_token(&[
+                ("grant_type", "authorization_code"),
+                ("code", code),
+                ("redirect_uri", redirect_uri),
+            ])
+            .await?;
+        let refresh_token = body
+            .refresh_token
+            .clone()
+            .ok_or_else(|| TokenError::Failed("no refresh token in the code exchange".into()))?;
+        if let Grant::User(current) = &client.grant {
+            *current.lock().await = refresh_token;
+        }
+        let scope = body.scope.clone().unwrap_or_default();
+        client.store_token(&mut *client.token.lock().await, body);
+        Ok((client, scope))
+    }
+
+    fn with_grant(config: SpotifyConfig, grant: Grant) -> Self {
         Self {
             http: ClientBuilder::new(
                 reqwest::Client::builder()
@@ -113,6 +223,7 @@ impl SpotifyClient {
             .with(TracingMiddleware::default())
             .build(),
             config,
+            grant,
             token: Mutex::new(None),
             requests: Default::default(),
         }
@@ -127,7 +238,18 @@ impl SpotifyClient {
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     }
 
-    async fn token(&self, refresh: bool) -> Result<String, String> {
+    /// The user's current refresh token, which a refresh may have rotated; `None` for app
+    /// clients.
+    pub async fn refresh_token(&self) -> Option<String> {
+        match &self.grant {
+            Grant::App => None,
+            Grant::User(token) => Some(token.lock().await.clone()),
+        }
+    }
+
+    /// A valid access token, fetching a new one when there is none, it has expired, or
+    /// `refresh` is set.
+    pub async fn token(&self, refresh: bool) -> Result<String, TokenError> {
         let mut token = self.token.lock().await;
         if !refresh
             && let Some((value, expires)) = token.as_ref()
@@ -136,6 +258,36 @@ impl SpotifyClient {
             return Ok(value.clone());
         }
 
+        let body = match &self.grant {
+            Grant::App => {
+                self.request_token(&[("grant_type", "client_credentials")])
+                    .await?
+            }
+            Grant::User(refresh_token) => {
+                let mut refresh_token = refresh_token.lock().await;
+                let body = self
+                    .request_token(&[
+                        ("grant_type", "refresh_token"),
+                        ("refresh_token", refresh_token.as_str()),
+                    ])
+                    .await?;
+                if let Some(rotated) = &body.refresh_token {
+                    *refresh_token = rotated.clone();
+                }
+                body
+            }
+        };
+        Ok(self.store_token(&mut token, body))
+    }
+
+    fn store_token(&self, slot: &mut Option<(String, Instant)>, body: TokenResponse) -> String {
+        // Refresh a minute early so a token never expires mid-request.
+        let expires = Instant::now() + Duration::from_secs(body.expires_in.saturating_sub(60));
+        *slot = Some((body.access_token.clone(), expires));
+        body.access_token
+    }
+
+    async fn request_token(&self, form: &[(&str, &str)]) -> Result<TokenResponse, TokenError> {
         self.count();
         let response = self
             .http
@@ -144,22 +296,28 @@ impl SpotifyClient {
                 self.config.accounts_url.trim_end_matches('/')
             ))
             .basic_auth(&self.config.client_id, Some(&self.config.client_secret))
-            .form(&[("grant_type", "client_credentials")])
+            .form(form)
             .send()
             .await
-            .map_err(|e| format!("token request failed: {e}"))?;
-        if !response.status().is_success() {
-            return Err(format!("token request returned {}", response.status()));
+            .map_err(|e| TokenError::Failed(format!("token request failed: {e}")))?;
+
+        let status = response.status();
+        if !status.is_success() {
+            let error = response
+                .json::<TokenErrorResponse>()
+                .await
+                .map(|e| e.error)
+                .unwrap_or_default();
+            return Err(if error == "invalid_grant" {
+                TokenError::Revoked
+            } else {
+                TokenError::Failed(format!("token request returned {status} {error}"))
+            });
         }
-        let body: TokenResponse = response
+        response
             .json()
             .await
-            .map_err(|e| format!("token response unreadable: {e}"))?;
-
-        // Refresh a minute early so a token never expires mid-request.
-        let expires = Instant::now() + Duration::from_secs(body.expires_in.saturating_sub(60));
-        *token = Some((body.access_token.clone(), expires));
-        Ok(body.access_token)
+            .map_err(|e| TokenError::Failed(format!("token response unreadable: {e}")))
     }
 
     async fn get<T: DeserializeOwned>(&self, path: &str) -> Fetch<T> {
@@ -170,7 +328,7 @@ impl SpotifyClient {
         loop {
             let token = match self.token(false).await {
                 Ok(token) => token,
-                Err(e) => return Fetch::Failed(e),
+                Err(e) => return Fetch::Failed(e.to_string()),
             };
 
             self.count();
@@ -190,7 +348,7 @@ impl SpotifyClient {
                 StatusCode::UNAUTHORIZED if !refreshed => {
                     refreshed = true;
                     if let Err(e) = self.token(true).await {
-                        return Fetch::Failed(e);
+                        return Fetch::Failed(e.to_string());
                     }
                 }
                 StatusCode::TOO_MANY_REQUESTS => {
@@ -224,6 +382,19 @@ impl SpotifyClient {
     /// Episodes need a market with an app token.
     pub async fn episode(&self, id: &str) -> Fetch<Episode> {
         self.get(&format!("episodes/{id}?market=AU")).await
+    }
+
+    /// The user a user client acts as.
+    pub async fn me(&self) -> Fetch<User> {
+        self.get("me").await
+    }
+
+    /// Up to 50 of the user's tracks played (past 30 seconds) after `after`, newest first.
+    /// `cursors.after` pages forward; Spotify only keeps the last 50.
+    pub async fn recently_played(&self, after: Option<DateTime<Utc>>) -> Fetch<RecentlyPlayed> {
+        let after = after.map_or(0, |t| t.timestamp_millis());
+        self.get(&format!("me/player/recently-played?limit=50&after={after}"))
+            .await
     }
 
     /// Downloads artwork from Spotify's image CDN (not the Web API; doesn't use the budget).

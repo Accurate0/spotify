@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH p AS MATERIALIZED (\n               SELECT (ts AT TIME ZONE $8)::date AS day, artist, ms_played\n               FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)\n           ),\n           d AS (\n               SELECT day, count(*)::int AS plays, coalesce(sum(ms_played), 0) AS ms\n               FROM p GROUP BY day\n               ORDER BY ms DESC, day DESC\n               LIMIT $9\n           ),\n           a AS (\n               SELECT DISTINCT ON (p.day) p.day, p.artist\n               FROM p JOIN d USING (day)\n               WHERE p.artist IS NOT NULL\n               GROUP BY p.day, p.artist\n               ORDER BY p.day, coalesce(sum(p.ms_played), 0) DESC\n           )\n           SELECT d.day AS \"day!\", d.plays AS \"plays!\", (d.ms / 60000)::int AS \"minutes!\", a.artist\n           FROM d LEFT JOIN a USING (day)\n           ORDER BY d.ms DESC, d.day DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "day!",
+        "type_info": "Date",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "plays!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "minutes!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "artist",
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8Array",
+        "Timestamptz",
+        "Timestamptz",
+        "TextArray",
+        "Int4",
+        "Text",
+        "Text",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      true
+    ]
+  },
+  "hash": "c5023145167a9f21a922339784cef0a22686e84fdd73d7fbd3ff52a7b95c9439"
+}

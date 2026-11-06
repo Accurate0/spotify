@@ -35,6 +35,14 @@ pub struct Account {
     pub display_name: String,
     pub spotify_username: Option<String>,
     pub play_count: i32,
+    pub spotify_link: Option<SpotifyLink>,
+}
+
+#[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyLink")]
+pub struct SpotifyLink {
+    pub spotify_user_id: String,
+    pub revoked_at: Option<DateTime<Utc>>,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
@@ -194,4 +202,37 @@ pub struct FinalizeExportPayload {
 pub struct FinalizeExport {
     #[arguments(input: $input)]
     pub spotify_finalize_export: FinalizeExportPayload,
+}
+
+#[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "Query")]
+pub struct ClientIdQuery {
+    pub spotify_client_id: Option<String>,
+}
+
+#[derive(cynic::InputObject)]
+#[cynic(graphql_type = "SpotifyLinkAccountInput")]
+pub struct LinkAccountInput {
+    pub account: String,
+    pub code: String,
+    pub redirect_uri: String,
+}
+
+#[derive(cynic::QueryVariables)]
+pub struct LinkAccountVariables {
+    pub input: LinkAccountInput,
+}
+
+#[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "SpotifyLinkAccountPayload")]
+pub struct LinkAccountPayload {
+    pub account: Account,
+    pub link: SpotifyLink,
+}
+
+#[derive(cynic::QueryFragment, Debug)]
+#[cynic(graphql_type = "Mutation", variables = "LinkAccountVariables")]
+pub struct LinkAccount {
+    #[arguments(input: $input)]
+    pub spotify_link_account: LinkAccountPayload,
 }

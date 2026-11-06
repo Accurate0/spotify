@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT i.uri, i.kind, i.name, i.artist, i.album, count(*)::int AS \"plays!\",\n                  avg(least(p.ms_played::float8 / m.duration_ms, 1)) AS \"completion!\"\n           FROM scoped_plays($1, $2, $3, $4, least($5, 0), $6, $7) p\n           JOIN item_meta m ON m.uri = p.item_uri AND m.status = 'ok' AND m.duration_ms > 0\n           JOIN items i ON i.uri = p.item_uri\n           GROUP BY i.uri\n           HAVING count(*) >= $8\n           ORDER BY 7, count(*) DESC, i.uri\n           LIMIT $9",
+  "query": "SELECT i.uri, i.kind, i.name, i.artist, i.album,\n                      count(*)::int AS \"plays!\", (coalesce(sum(p.ms_played), 0) / 60000)::int AS \"minutes!\"\n               FROM scoped_plays($1, $2, $3, $4, $5, $6, $7) p\n               JOIN items i ON i.uri = p.item_uri\n               GROUP BY i.uri\n               ORDER BY CASE WHEN $8 THEN count(*) ELSE coalesce(sum(p.ms_played), 0) END DESC, i.uri\n               LIMIT $9 OFFSET $10",
   "describe": {
     "columns": [
       {
@@ -66,8 +66,8 @@
       },
       {
         "ordinal": 6,
-        "name": "completion!",
-        "type_info": "Float8",
+        "name": "minutes!",
+        "type_info": "Int4",
         "origin": "Expression"
       }
     ],
@@ -80,6 +80,7 @@
         "Int4",
         "Text",
         "Text",
+        "Bool",
         "Int8",
         "Int8"
       ]
@@ -94,5 +95,5 @@
       null
     ]
   },
-  "hash": "2944e21941259730c17890b212d6af3106dce5d0efd108e24f0da6f0f3ff0f6c"
+  "hash": "667f90e438036eefb9b6f956e947a14bcd50328c4c12810d5b1f0dea9e8ecf79"
 }

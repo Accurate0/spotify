@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "WITH a AS (\n               SELECT artist, count(*) AS plays, sum(ms_played) AS ms, max(ts) AS last_ts\n               FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)\n               WHERE artist IS NOT NULL\n               GROUP BY artist\n           )\n           SELECT artist AS \"artist!\", plays::int AS \"plays!\", (ms / 60000)::int AS \"minutes!\",\n                  last_ts AS \"last_played!\"\n           FROM a\n           WHERE last_ts < (SELECT max(last_ts) FROM a) - interval '1 year'\n           ORDER BY ms DESC, artist\n           LIMIT $8 OFFSET $9",
+  "query": "WITH a AS (\n               SELECT artist, count(*) AS plays, coalesce(sum(ms_played), 0) AS ms, max(ts) AS last_ts\n               FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)\n               WHERE artist IS NOT NULL\n               GROUP BY artist\n           )\n           SELECT artist AS \"artist!\", plays::int AS \"plays!\", (ms / 60000)::int AS \"minutes!\",\n                  last_ts AS \"last_played!\"\n           FROM a\n           WHERE last_ts < (SELECT max(last_ts) FROM a) - interval '1 year'\n           ORDER BY ms DESC, artist\n           LIMIT $8 OFFSET $9",
   "describe": {
     "columns": [
       {
@@ -48,5 +48,5 @@
       null
     ]
   },
-  "hash": "e76a91524fca089c3b3b5657e5cc8c761a06f63b12b89d939af80e28c1872560"
+  "hash": "0a18b35241ec3b30b53bd7d4ffee87a9bc7254b37b592bb98eb6151e40c62dde"
 }

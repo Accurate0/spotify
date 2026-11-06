@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE spotify_links\n             SET refresh_token = $2, last_polled_at = now(),\n                 last_played_at = greatest(last_played_at, $3)\n             WHERE account_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "416de59191c17065ebfffed8474575ae3f07860c90f3222a22b05e6cfe9a03c8"
+}

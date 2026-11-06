@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT p.album AS \"album!\", p.artist, count(*)::int AS \"plays!\",\n                      (sum(p.ms_played) / 60000)::int AS \"minutes!\",\n                      max(a.image_key) AS artwork_key, max(a.release_year) AS release_year\n               FROM scoped_plays($1, $2, $3, $4, $5, $6, $7) p\n               LEFT JOIN item_meta m ON m.uri = p.item_uri\n               LEFT JOIN spotify_albums a ON a.id = m.album_id\n               WHERE p.album IS NOT NULL\n               GROUP BY p.album, p.artist\n               ORDER BY CASE WHEN $8 THEN count(*) ELSE sum(p.ms_played) END DESC, p.album, p.artist\n               LIMIT $9 OFFSET $10",
+  "query": "SELECT p.album AS \"album!\", p.artist, count(*)::int AS \"plays!\",\n                      (coalesce(sum(p.ms_played), 0) / 60000)::int AS \"minutes!\",\n                      max(a.image_key) AS artwork_key, max(a.release_year) AS release_year\n               FROM scoped_plays($1, $2, $3, $4, $5, $6, $7) p\n               LEFT JOIN item_meta m ON m.uri = p.item_uri\n               LEFT JOIN spotify_albums a ON a.id = m.album_id\n               WHERE p.album IS NOT NULL\n               GROUP BY p.album, p.artist\n               ORDER BY CASE WHEN $8 THEN count(*) ELSE coalesce(sum(p.ms_played), 0) END DESC, p.album, p.artist\n               LIMIT $9 OFFSET $10",
   "describe": {
     "columns": [
       {
@@ -63,5 +63,5 @@
       null
     ]
   },
-  "hash": "71f421b81e41e6879325fe35ef843a074848276225d7be4ee3c988ac935ee15e"
+  "hash": "02e99664b17fe5cf774884ed117603757c1fef1c18f4d30a8611d7e5b38e2467"
 }

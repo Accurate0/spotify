@@ -1,12 +1,12 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT date_trunc($8, ts AT TIME ZONE $9) AT TIME ZONE $9 AS \"start!\",\n                      count(*)::int AS \"plays!\", (sum(ms_played) / 60000)::int AS \"minutes!\"\n               FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)\n               GROUP BY 1\n               ORDER BY 1",
+  "query": "SELECT artist AS \"artist!\", count(*)::int AS \"plays!\",\n                      (coalesce(sum(ms_played), 0) / 60000)::int AS \"minutes!\"\n               FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)\n               WHERE artist IS NOT NULL\n               GROUP BY artist\n               ORDER BY CASE WHEN $8 THEN count(*) ELSE coalesce(sum(ms_played), 0) END DESC, artist\n               LIMIT $9 OFFSET $10",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "start!",
-        "type_info": "Timestamptz",
+        "name": "artist!",
+        "type_info": "Text",
         "origin": "Expression"
       },
       {
@@ -31,8 +31,9 @@
         "Int4",
         "Text",
         "Text",
-        "Text",
-        "Text"
+        "Bool",
+        "Int8",
+        "Int8"
       ]
     },
     "nullable": [
@@ -41,5 +42,5 @@
       null
     ]
   },
-  "hash": "26f09002c62033dadfb07441b7cf987157eafc20480f2a409128decc1d71eef3"
+  "hash": "1316d3dbe5527542e622ab25e64c709bc9b0333e0c714b5ba06f60da19202684"
 }

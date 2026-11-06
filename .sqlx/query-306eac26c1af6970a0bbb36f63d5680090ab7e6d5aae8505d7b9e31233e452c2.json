@@ -1,0 +1,59 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH firsts AS (\n               -- First play ever, ignoring the date range.\n               SELECT DISTINCT ON (artist) artist, ts AS first_ts, item_uri\n               FROM scoped_plays($1, NULL, NULL, $4, $5, $6, $7)\n               WHERE artist IS NOT NULL\n               ORDER BY artist, ts\n           ),\n           in_range AS (\n               SELECT artist, count(*) AS plays, coalesce(sum(ms_played), 0) AS ms\n               FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)\n               WHERE artist IS NOT NULL\n               GROUP BY artist\n           )\n           SELECT f.artist AS \"artist!\", f.first_ts AS \"first_played!\", f.item_uri,\n                  r.plays::int AS \"plays!\", (r.ms / 60000)::int AS \"minutes!\"\n           FROM firsts f JOIN in_range r USING (artist)\n           WHERE ($2::timestamptz IS NULL OR f.first_ts >= $2)\n             AND ($3::timestamptz IS NULL OR f.first_ts < $3)\n           ORDER BY r.ms DESC, f.artist\n           LIMIT $8 OFFSET $9",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "artist!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "first_played!",
+        "type_info": "Timestamptz",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "item_uri",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "plays!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "minutes!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8Array",
+        "Timestamptz",
+        "Timestamptz",
+        "TextArray",
+        "Int4",
+        "Text",
+        "Text",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "306eac26c1af6970a0bbb36f63d5680090ab7e6d5aae8505d7b9e31233e452c2"
+}

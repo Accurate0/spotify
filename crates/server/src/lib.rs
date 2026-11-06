@@ -2,6 +2,7 @@ pub mod auth;
 pub mod enrich;
 pub mod graphql;
 pub mod import;
+pub mod recent;
 pub mod telemetry;
 
 use async_graphql::http::GraphiQLSource;
@@ -15,6 +16,7 @@ use axum::routing::get;
 use axum::{Router, middleware};
 use axum_tracing_opentelemetry::middleware::OtelAxumLayer;
 use enrich::artwork::ArtworkStore;
+use enrich::spotify::SpotifyConfig;
 use sqlx::PgPool;
 use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::trace::TraceLayer;
@@ -24,6 +26,7 @@ const MAX_BODY_BYTES: usize = 64 * 1024 * 1024;
 
 /// The API. With `auth` set, every /v1/graphql request needs a valid Kanidm bearer token; `None`
 /// is for local development only. Artwork URLs in responses are absolute, under `public_url`.
+/// `spotify` (the app's credentials) is needed to link accounts to their Spotify users.
 /// /health and /art (Spotify artwork, which `<img>` tags fetch
 /// without a token) are always open.
 pub fn router(
@@ -31,10 +34,11 @@ pub fn router(
     auth: Option<auth::Authenticator>,
     artwork: Option<Arc<ArtworkStore>>,
     public_url: &str,
+    spotify: Option<SpotifyConfig>,
 ) -> Router {
     let mut api = Router::new().route(
         "/v1/graphql",
-        get(graphiql).post_service(GraphQL::new(graphql::schema(pool, public_url))),
+        get(graphiql).post_service(GraphQL::new(graphql::schema(pool, public_url, spotify))),
     );
     if let Some(auth) = auth {
         api = api.layer(middleware::from_fn_with_state(auth, auth::require_auth));

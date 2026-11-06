@@ -50,7 +50,9 @@ export function formatDateTime(iso: string): string {
   });
 }
 
-export function formatPlayLength(ms: number): string {
+export function formatPlayLength(ms: number | null): string {
+  // Recent plays from the Web API have no length until an export covers them.
+  if (ms === null) return "—";
   const seconds = Math.round(ms / 1000);
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }

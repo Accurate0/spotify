@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT u.uri AS \"uri!\" FROM UNNEST($1::text[]) AS u(uri)\n           LEFT JOIN item_meta m ON m.uri = u.uri\n           WHERE u.uri LIKE 'spotify:track:%' AND (m.uri IS NULL OR m.status <> 'ok')",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "uri!",
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "09607814562ed00bdf05499198265680999a363f9bdeb721eb67439187512121"
+}

@@ -105,7 +105,7 @@ async fn setup(pool: PgPool) -> (Fixture, AppSchema) {
 
     (
         f,
-        spotify_server::graphql::schema(pool, "https://spotify.test"),
+        spotify_server::graphql::schema(pool, "https://spotify.test", None),
     )
 }
 

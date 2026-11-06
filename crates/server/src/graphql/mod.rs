@@ -2,6 +2,8 @@ use async_graphql::dataloader::DataLoader;
 use async_graphql::{EmptySubscription, SDLExportOptions, Schema, SchemaBuilder};
 use sqlx::PgPool;
 
+use crate::enrich::spotify::SpotifyConfig;
+
 /// Runs a query over `scoped_plays($1..$7)`, binding a `Scope`'s seven filter parameters so each
 /// query lists only its own, starting at `$8`. `query_as!(T)` maps rows into `T`.
 macro_rules! scoped {
@@ -57,8 +59,9 @@ pub fn builder() -> SchemaBuilder<QueryRoot, MutationRoot, EmptySubscription> {
 }
 
 /// `public_url` is the origin artwork URLs point at, e.g. `https://spotify.ortzi.cloud`.
-pub fn schema(pool: PgPool, public_url: &str) -> AppSchema {
-    with_data(builder(), pool, public_url)
+/// Without `spotify`, accounts can't be linked to their Spotify users.
+pub fn schema(pool: PgPool, public_url: &str, spotify: Option<SpotifyConfig>) -> AppSchema {
+    with_data(builder(), pool, public_url, spotify)
 }
 
 /// Attaches the pool and batch loaders (uncached, so no stale reads).
@@ -66,6 +69,7 @@ fn with_data<Q, M>(
     builder: SchemaBuilder<Q, M, EmptySubscription>,
     pool: PgPool,
     public_url: &str,
+    spotify: Option<SpotifyConfig>,
 ) -> Schema<Q, M, EmptySubscription>
 where
     Q: async_graphql::ObjectType + 'static,
@@ -93,6 +97,7 @@ where
             tokio::spawn,
         ))
         .data(catalog::PublicUrl(public_url.to_owned()))
+        .data(spotify)
         .data(pool)
         .finish()
 }

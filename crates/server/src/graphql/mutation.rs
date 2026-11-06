@@ -5,8 +5,10 @@ use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 
 use super::node::{NodeType, decode_row_id};
-use super::objects::{Account, Export, ExportFile};
+use super::objects::{Account, Export, ExportFile, SpotifyLink};
+use crate::enrich::spotify::SpotifyConfig;
 use crate::import::{self, FileUpload, ImportOutcome};
+use crate::recent;
 
 #[derive(Default)]
 pub struct MutationRoot;
@@ -79,6 +81,24 @@ pub struct FinalizeExportInput {
 #[graphql(name = "SpotifyFinalizeExportPayload")]
 pub struct FinalizeExportPayload {
     pub export: Export,
+}
+
+#[derive(InputObject)]
+#[graphql(name = "SpotifyLinkAccountInput")]
+pub struct LinkAccountInput {
+    /// Account slug.
+    pub account: String,
+    /// The authorization code from Spotify's redirect, for `user-read-recently-played`.
+    pub code: String,
+    /// The redirect URI the code was issued for.
+    pub redirect_uri: String,
+}
+
+#[derive(SimpleObject)]
+#[graphql(name = "SpotifyLinkAccountPayload")]
+pub struct LinkAccountPayload {
+    pub account: Account,
+    pub link: SpotifyLink,
 }
 
 #[Object(name = "Mutation")]
@@ -197,5 +217,35 @@ impl MutationRoot {
             .ok_or("export not found")?;
 
         Ok(FinalizeExportPayload { export })
+    }
+
+    /// Links an account to the Spotify user who authorized `code`, so their recently played
+    /// tracks are fetched until the next export covers them.
+    #[graphql(inaccessible)]
+    async fn spotify_link_account(
+        &self,
+        ctx: &Context<'_>,
+        input: LinkAccountInput,
+    ) -> async_graphql::Result<LinkAccountPayload> {
+        let pool = ctx.data::<PgPool>()?;
+        let config = ctx
+            .data::<Option<SpotifyConfig>>()?
+            .clone()
+            .ok_or("spotify credentials aren't configured")?;
+        let account = Account::by_slug(pool, &input.account)
+            .await?
+            .ok_or("account not found")?;
+
+        let link = recent::link(pool, config, account.id, &input.code, &input.redirect_uri)
+            .await
+            .map_err(|e| match e {
+                recent::LinkError::Database(e) => async_graphql::Error::from(e),
+                e => e.to_string().into(),
+            })?;
+
+        Ok(LinkAccountPayload {
+            account,
+            link: SpotifyLink(link),
+        })
     }
 }

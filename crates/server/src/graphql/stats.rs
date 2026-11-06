@@ -180,9 +180,40 @@ pub struct Play {
     pub(super) item_uri: Option<String>,
     pub(super) name: Option<String>,
     pub(super) artist: Option<String>,
-    pub(super) ms_played: i32,
+    pub(super) ms_played: Option<i32>,
     pub(super) skipped: Option<bool>,
     pub(super) is_extended: bool,
+    pub(super) source: String,
+}
+
+/// Where a play came from.
+#[derive(Enum, Clone, Copy, PartialEq, Eq)]
+#[graphql(name = "SpotifyPlaySource")]
+pub enum PlaySource {
+    /// Extended streaming history.
+    Extended,
+    /// Account data's streaming history: minute precision, no item.
+    Basic,
+    /// The Web API's recently played tracks, until an export covers them: no play length.
+    Recent,
+}
+
+impl PlaySource {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Extended => "extended",
+            Self::Basic => "basic",
+            Self::Recent => "recent",
+        }
+    }
+
+    fn parse(source: &str) -> Self {
+        match source {
+            "basic" => Self::Basic,
+            "recent" => Self::Recent,
+            _ => Self::Extended,
+        }
+    }
 }
 
 #[Object(name = "SpotifyPlay")]
@@ -192,7 +223,8 @@ impl Play {
         self.ts
     }
 
-    async fn ms_played(&self) -> i32 {
+    /// Null for recent plays, whose length the Web API doesn't report.
+    async fn ms_played(&self) -> Option<i32> {
         self.ms_played
     }
 
@@ -200,9 +232,13 @@ impl Play {
         self.skipped
     }
 
-    /// False for account-data plays, which have minute precision and no item.
+    /// False for account-data plays (minute precision, no item) and recent plays; see `source`.
     async fn is_extended(&self) -> bool {
         self.is_extended
+    }
+
+    async fn source(&self) -> PlaySource {
+        PlaySource::parse(&self.source)
     }
 
     async fn name(&self) -> Option<&str> {
@@ -294,11 +330,11 @@ impl Stats {
             query!,
             self.scope,
             r#"SELECT artist AS "artist!", count(*)::int AS "plays!",
-                      (sum(ms_played) / 60000)::int AS "minutes!"
+                      (coalesce(sum(ms_played), 0) / 60000)::int AS "minutes!"
                FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)
                WHERE artist IS NOT NULL
                GROUP BY artist
-               ORDER BY CASE WHEN $8 THEN count(*) ELSE sum(ms_played) END DESC, artist
+               ORDER BY CASE WHEN $8 THEN count(*) ELSE coalesce(sum(ms_played), 0) END DESC, artist
                LIMIT $9 OFFSET $10"#,
             by == RankBy::Plays,
             page.fetch(),
@@ -327,11 +363,11 @@ impl Stats {
             query!,
             self.scope,
             r#"SELECT i.uri, i.kind, i.name, i.artist, i.album,
-                      count(*)::int AS "plays!", (sum(p.ms_played) / 60000)::int AS "minutes!"
+                      count(*)::int AS "plays!", (coalesce(sum(p.ms_played), 0) / 60000)::int AS "minutes!"
                FROM scoped_plays($1, $2, $3, $4, $5, $6, $7) p
                JOIN items i ON i.uri = p.item_uri
                GROUP BY i.uri
-               ORDER BY CASE WHEN $8 THEN count(*) ELSE sum(p.ms_played) END DESC, i.uri
+               ORDER BY CASE WHEN $8 THEN count(*) ELSE coalesce(sum(p.ms_played), 0) END DESC, i.uri
                LIMIT $9 OFFSET $10"#,
             by == RankBy::Plays,
             page.fetch(),
@@ -365,14 +401,14 @@ impl Stats {
             query!,
             self.scope,
             r#"SELECT p.album AS "album!", p.artist, count(*)::int AS "plays!",
-                      (sum(p.ms_played) / 60000)::int AS "minutes!",
+                      (coalesce(sum(p.ms_played), 0) / 60000)::int AS "minutes!",
                       max(a.image_key) AS artwork_key, max(a.release_year) AS release_year
                FROM scoped_plays($1, $2, $3, $4, $5, $6, $7) p
                LEFT JOIN item_meta m ON m.uri = p.item_uri
                LEFT JOIN spotify_albums a ON a.id = m.album_id
                WHERE p.album IS NOT NULL
                GROUP BY p.album, p.artist
-               ORDER BY CASE WHEN $8 THEN count(*) ELSE sum(p.ms_played) END DESC, p.album, p.artist
+               ORDER BY CASE WHEN $8 THEN count(*) ELSE coalesce(sum(p.ms_played), 0) END DESC, p.album, p.artist
                LIMIT $9 OFFSET $10"#,
             by == RankBy::Plays,
             page.fetch(),
@@ -402,7 +438,7 @@ impl Stats {
             query!,
             self.scope,
             r#"SELECT date_trunc($8, ts AT TIME ZONE $9) AT TIME ZONE $9 AS "start!",
-                      count(*)::int AS "plays!", (sum(ms_played) / 60000)::int AS "minutes!"
+                      count(*)::int AS "plays!", (coalesce(sum(ms_played), 0) / 60000)::int AS "minutes!"
                FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)
                GROUP BY 1
                ORDER BY 1"#,
@@ -430,7 +466,7 @@ impl Stats {
             self.scope,
             r#"SELECT extract(isodow FROM ts AT TIME ZONE $8)::int AS "day!",
                       extract(hour FROM ts AT TIME ZONE $8)::int AS "hour!",
-                      count(*)::int AS "plays!", (sum(ms_played) / 60000)::int AS "minutes!"
+                      count(*)::int AS "plays!", (coalesce(sum(ms_played), 0) / 60000)::int AS "minutes!"
                FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)
                GROUP BY 1, 2
                ORDER BY 1, 2"#,
@@ -450,25 +486,29 @@ impl Stats {
             .collect())
     }
 
-    /// Individual plays, most recent first.
+    /// Individual plays, most recent first, optionally only from some `sources`.
     async fn plays(
         &self,
         ctx: &Context<'_>,
         first: Option<i32>,
         after: Option<String>,
+        #[graphql(default)] sources: Vec<PlaySource>,
     ) -> async_graphql::Result<PlainConnection<Play>> {
         let pool = ctx.data::<PgPool>()?;
         let page = Page::new(first, after, 20)?;
+        let sources: Vec<String> = sources.iter().map(|s| s.as_str().to_owned()).collect();
         let rows = scoped!(
             query_as!(Play),
             self.scope,
             r#"SELECT account_id AS "account_id!", ts AS "ts!", item_uri, name, artist,
-                      ms_played AS "ms_played!", skipped, is_extended AS "is_extended!"
+                      ms_played, skipped, is_extended AS "is_extended!", source AS "source!"
                FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)
+               WHERE cardinality($10::text[]) = 0 OR source = ANY($10)
                ORDER BY ts DESC
                LIMIT $8 OFFSET $9"#,
             page.fetch(),
             page.offset,
+            &sources,
         )
         .fetch_all(pool)
         .await?;

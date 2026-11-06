@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH p AS (\n               SELECT account_id, ts, ms_played,\n                      ts - make_interval(secs => coalesce(ms_played, 0) / 1000.0) AS started\n               FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)\n           ),\n           -- A play starting more than 30 minutes after the previous one ended opens a session.\n           marked AS (\n               SELECT *, CASE WHEN lag(ts) OVER w IS NULL\n                                OR started - lag(ts) OVER w > interval '30 minutes'\n                              THEN 1 ELSE 0 END AS boundary\n               FROM p\n               WINDOW w AS (PARTITION BY account_id ORDER BY ts)\n           ),\n           numbered AS (\n               SELECT *, sum(boundary) OVER (PARTITION BY account_id ORDER BY ts) AS sid\n               FROM marked\n           ),\n           s AS (\n               SELECT account_id, sid, min(started) AS start_ts, max(ts) AS end_ts,\n                      count(*)::int AS plays, coalesce(sum(ms_played), 0) AS ms\n               FROM numbered\n               GROUP BY account_id, sid\n           )\n           SELECT (SELECT count(*)::int FROM s) AS \"count!\",\n                  (SELECT avg(ms)::float8 / 60000 FROM s) AS average_minutes,\n                  l.start_ts, l.end_ts, l.plays, (l.ms / 60000)::int AS minutes\n           FROM (SELECT 1) one\n           LEFT JOIN LATERAL (SELECT * FROM s ORDER BY ms DESC LIMIT 1) l ON TRUE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "average_minutes",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "start_ts",
+        "type_info": "Timestamptz",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "end_ts",
+        "type_info": "Timestamptz",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "plays",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "minutes",
+        "type_info": "Int4",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8Array",
+        "Timestamptz",
+        "Timestamptz",
+        "TextArray",
+        "Int4",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      true,
+      true,
+      true,
+      null
+    ]
+  },
+  "hash": "dcfd54cc9fb7d5a3dcdd6b3af5784749c84835aa0cea5e5fc22c44caa731587b"
+}

@@ -442,9 +442,18 @@ pub struct AccountSlug {
 #[cynic(graphql_type = "SpotifyPlay")]
 pub struct Play {
     pub ts: DateTime<Utc>,
-    pub ms_played: i32,
+    pub ms_played: Option<i32>,
     pub skipped: Option<bool>,
+    pub source: PlaySource,
     pub account: AccountSlug,
+}
+
+#[derive(cynic::Enum, Clone, Copy, Debug, PartialEq, Eq)]
+#[cynic(graphql_type = "SpotifyPlaySource")]
+pub enum PlaySource {
+    Extended,
+    Basic,
+    Recent,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
@@ -798,10 +807,13 @@ pub async fn track(client: &Client, query: &str, filter: &FilterArgs) -> anyhow:
             println!(
                 "  {}  {:>7}  {:<8}{}",
                 play.ts.with_timezone(&filter.tz).format("%Y-%m-%d %H:%M"),
-                format!("{}s", play.ms_played / 1000),
+                play.ms_played
+                    .map_or("-".to_owned(), |ms| format!("{}s", ms / 1000)),
                 play.account.slug,
                 if play.skipped == Some(true) {
                     "  skipped"
+                } else if play.source == PlaySource::Recent {
+                    "  recent"
                 } else {
                     ""
                 }

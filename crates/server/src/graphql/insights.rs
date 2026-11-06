@@ -240,7 +240,7 @@ pub async fn first_play(pool: &PgPool, scope: &Scope) -> sqlx::Result<Option<Pla
         query_as!(Play),
         scope,
         r#"SELECT account_id AS "account_id!", ts AS "ts!", item_uri, name, artist,
-                  ms_played AS "ms_played!", skipped, is_extended AS "is_extended!"
+                  ms_played, skipped, is_extended AS "is_extended!", source AS "source!"
            FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)
            ORDER BY ts
            LIMIT 1"#
@@ -300,7 +300,7 @@ pub async fn top_days(pool: &PgPool, scope: &Scope, first: i32) -> sqlx::Result<
                FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)
            ),
            d AS (
-               SELECT day, count(*)::int AS plays, sum(ms_played) AS ms
+               SELECT day, count(*)::int AS plays, coalesce(sum(ms_played), 0) AS ms
                FROM p GROUP BY day
                ORDER BY ms DESC, day DESC
                LIMIT $9
@@ -310,7 +310,7 @@ pub async fn top_days(pool: &PgPool, scope: &Scope, first: i32) -> sqlx::Result<
                FROM p JOIN d USING (day)
                WHERE p.artist IS NOT NULL
                GROUP BY p.day, p.artist
-               ORDER BY p.day, sum(p.ms_played) DESC
+               ORDER BY p.day, coalesce(sum(p.ms_played), 0) DESC
            )
            SELECT d.day AS "day!", d.plays AS "plays!", (d.ms / 60000)::int AS "minutes!", a.artist
            FROM d LEFT JOIN a USING (day)
@@ -466,7 +466,7 @@ pub async fn breakdown(
                       WHEN 'decade' THEN (al.release_year / 10 * 10)::text || 's'
                   END AS key,
                   count(*)::int AS "plays!",
-                  (sum(ms_played) / 60000)::int AS "minutes!"
+                  (coalesce(sum(ms_played), 0) / 60000)::int AS "minutes!"
            FROM scoped_plays($1, $2, $3, $4, $5, $6, $7) p
            LEFT JOIN item_meta m ON m.uri = p.item_uri
            LEFT JOIN spotify_albums al ON al.id = m.album_id
@@ -507,7 +507,7 @@ pub async fn sessions(pool: &PgPool, scope: &Scope) -> sqlx::Result<Sessions> {
         scope,
         r#"WITH p AS (
                SELECT account_id, ts, ms_played,
-                      ts - make_interval(secs => ms_played / 1000.0) AS started
+                      ts - make_interval(secs => coalesce(ms_played, 0) / 1000.0) AS started
                FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)
            ),
            -- A play starting more than 30 minutes after the previous one ended opens a session.
@@ -524,7 +524,7 @@ pub async fn sessions(pool: &PgPool, scope: &Scope) -> sqlx::Result<Sessions> {
            ),
            s AS (
                SELECT account_id, sid, min(started) AS start_ts, max(ts) AS end_ts,
-                      count(*)::int AS plays, sum(ms_played) AS ms
+                      count(*)::int AS plays, coalesce(sum(ms_played), 0) AS ms
                FROM numbered
                GROUP BY account_id, sid
            )
@@ -570,7 +570,7 @@ pub async fn discoveries(
                ORDER BY artist, ts
            ),
            in_range AS (
-               SELECT artist, count(*) AS plays, sum(ms_played) AS ms
+               SELECT artist, count(*) AS plays, coalesce(sum(ms_played), 0) AS ms
                FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)
                WHERE artist IS NOT NULL
                GROUP BY artist
@@ -606,7 +606,7 @@ pub async fn forgotten_artists(
         query!,
         scope,
         r#"WITH a AS (
-               SELECT artist, count(*) AS plays, sum(ms_played) AS ms, max(ts) AS last_ts
+               SELECT artist, count(*) AS plays, coalesce(sum(ms_played), 0) AS ms, max(ts) AS last_ts
                FROM scoped_plays($1, $2, $3, $4, $5, $6, $7)
                WHERE artist IS NOT NULL
                GROUP BY artist
@@ -647,13 +647,13 @@ pub async fn top_genres(
     let rows = scoped!(
         query!,
         scope,
-        r#"SELECT g AS "genre!", count(*)::int AS "plays!", (sum(p.ms_played) / 60000)::int AS "minutes!"
+        r#"SELECT g AS "genre!", count(*)::int AS "plays!", (coalesce(sum(p.ms_played), 0) / 60000)::int AS "minutes!"
            FROM scoped_plays($1, $2, $3, $4, $5, $6, $7) p
            JOIN item_artists ia ON ia.item_uri = p.item_uri AND ia.position = 0
            JOIN spotify_artists sa ON sa.id = ia.artist_id
            CROSS JOIN LATERAL unnest(sa.genres) AS g
            GROUP BY g
-           ORDER BY CASE WHEN $8 THEN count(*) ELSE sum(p.ms_played) END DESC, g
+           ORDER BY CASE WHEN $8 THEN count(*) ELSE coalesce(sum(p.ms_played), 0) END DESC, g
            LIMIT $9 OFFSET $10"#,
         by_plays,
         page.fetch(),
@@ -715,7 +715,7 @@ pub async fn genre_timeline(
         scope,
         r#"SELECT g AS "genre!",
                   date_trunc($8, p.ts AT TIME ZONE $9) AT TIME ZONE $9 AS "start!",
-                  (sum(p.ms_played) / 60000)::int AS "minutes!"
+                  (coalesce(sum(p.ms_played), 0) / 60000)::int AS "minutes!"
            FROM scoped_plays($1, $2, $3, $4, $5, $6, $7) p
            JOIN item_artists ia ON ia.item_uri = p.item_uri AND ia.position = 0
            JOIN spotify_artists sa ON sa.id = ia.artist_id
@@ -823,7 +823,8 @@ pub async fn completion(pool: &PgPool, scope: &Scope) -> sqlx::Result<Completion
                         THEN (p.ms_played >= m.duration_ms * 0.9)::int END)::float8 AS finished_share,
                coalesce(count(m.duration_ms)::float8 / nullif(count(*), 0), 0) AS "coverage!"
            FROM scoped_plays($1, $2, $3, $4, least($5, 0), $6, $7) p
-           LEFT JOIN item_meta m ON m.uri = p.item_uri AND m.status = 'ok'"#
+           LEFT JOIN item_meta m ON m.uri = p.item_uri AND m.status = 'ok'
+           WHERE p.ms_played IS NOT NULL"#
     )
     .fetch_one(pool)
     .await?;
@@ -858,6 +859,7 @@ pub async fn most_abandoned(
            FROM scoped_plays($1, $2, $3, $4, least($5, 0), $6, $7) p
            JOIN item_meta m ON m.uri = p.item_uri AND m.status = 'ok' AND m.duration_ms > 0
            JOIN items i ON i.uri = p.item_uri
+           WHERE p.ms_played IS NOT NULL
            GROUP BY i.uri
            HAVING count(*) >= $8
            ORDER BY 7, count(*) DESC, i.uri

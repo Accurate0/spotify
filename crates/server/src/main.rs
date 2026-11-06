@@ -8,6 +8,7 @@ use spotify_server::auth::{AuthConfig, Authenticator, Provider};
 use spotify_server::enrich::artwork::ArtworkStore;
 use spotify_server::enrich::spotify::{SpotifyClient, SpotifyConfig};
 use spotify_server::enrich::{self, EnrichConfig};
+use spotify_server::recent;
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
 
@@ -34,6 +35,8 @@ enum Command {
     Serve,
     /// Fetch Spotify Web API metadata and artwork for imported items, within the budget.
     Enrich(EnrichArgs),
+    /// Fetch recently played tracks for every account linked to its Spotify user.
+    Recent(SpotifyArgs),
 }
 
 #[derive(Args)]
@@ -76,10 +79,14 @@ struct ServeArgs {
         default_value = "https://spotify.ortzi.cloud"
     )]
     public_url: String,
+
+    /// Optional here: without it, accounts can't be linked to Spotify users.
+    #[command(flatten)]
+    spotify: SpotifyArgs,
 }
 
 #[derive(Args)]
-struct EnrichArgs {
+struct SpotifyArgs {
     #[arg(long, env = "SPOTIFY_CLIENT_ID")]
     client_id: Option<String>,
 
@@ -99,6 +106,25 @@ struct EnrichArgs {
         default_value = "https://accounts.spotify.com"
     )]
     accounts_url: String,
+}
+
+impl SpotifyArgs {
+    fn config(self) -> anyhow::Result<SpotifyConfig> {
+        Ok(SpotifyConfig {
+            client_id: self.client_id.context("SPOTIFY_CLIENT_ID is required")?,
+            client_secret: self
+                .client_secret
+                .context("SPOTIFY_CLIENT_SECRET is required")?,
+            api_url: self.api_url,
+            accounts_url: self.accounts_url,
+        })
+    }
+}
+
+#[derive(Args)]
+struct EnrichArgs {
+    #[command(flatten)]
+    spotify: SpotifyArgs,
 
     /// Milliseconds between Web API requests.
     #[arg(long, default_value_t = 4000)]
@@ -150,6 +176,7 @@ async fn main() -> anyhow::Result<()> {
     match cli.command.unwrap_or(Command::Serve) {
         Command::Serve => serve(cli.database_url, cli.serve).await,
         Command::Enrich(args) => enrich(cli.database_url, args).await,
+        Command::Recent(args) => recent(cli.database_url, args).await,
     }
 }
 
@@ -188,13 +215,18 @@ async fn serve(database_url: Option<String>, args: ServeArgs) -> anyhow::Result<
         tracing::warn!("no artwork bucket configured, /art will return 404");
     }
 
+    let spotify = args.spotify.config().ok();
+    if spotify.is_none() {
+        tracing::warn!("no spotify credentials configured, accounts can't be linked");
+    }
+
     let pool = connect(database_url).await?;
     let listener = tokio::net::TcpListener::bind(args.listen).await?;
     tracing::info!(addr = %args.listen, "listening");
 
     axum::serve(
         listener,
-        spotify_server::router(pool, auth, artwork, &args.public_url),
+        spotify_server::router(pool, auth, artwork, &args.public_url, spotify),
     )
     .with_graceful_shutdown(async {
         let _ = tokio::signal::ctrl_c().await;
@@ -231,14 +263,7 @@ async fn enrich(database_url: Option<String>, args: EnrichArgs) -> anyhow::Resul
         return Ok(());
     }
 
-    let client = SpotifyClient::new(SpotifyConfig {
-        client_id: args.client_id.context("SPOTIFY_CLIENT_ID is required")?,
-        client_secret: args
-            .client_secret
-            .context("SPOTIFY_CLIENT_SECRET is required")?,
-        api_url: args.api_url,
-        accounts_url: args.accounts_url,
-    });
+    let client = SpotifyClient::new(args.spotify.config()?);
     let store = ArtworkStore::from_env()?;
     if store.is_none() {
         tracing::warn!("no artwork bucket configured, skipping artwork downloads");
@@ -255,6 +280,21 @@ async fn enrich(database_url: Option<String>, args: EnrichArgs) -> anyhow::Resul
         rate_limited_until = ?report.rate_limited_until,
         skipped = ?report.skipped,
         "enrichment run finished"
+    );
+    Ok(())
+}
+
+async fn recent(database_url: Option<String>, args: SpotifyArgs) -> anyhow::Result<()> {
+    let config = args.config()?;
+    let pool = connect(database_url).await?;
+    let report = recent::poll(&pool, &config).await?;
+    tracing::info!(
+        links = report.links,
+        plays = report.plays,
+        inserted = report.inserted,
+        revoked = report.revoked,
+        failed = report.failed,
+        "recent plays poll finished"
     );
     Ok(())
 }

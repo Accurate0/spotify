@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT spotify_user_id, refresh_token, last_played_at FROM spotify_links\n         WHERE account_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "spotify_user_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "spotify_links",
+            "name": "spotify_user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "refresh_token",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "spotify_links",
+            "name": "refresh_token"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "last_played_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "spotify_links",
+            "name": "last_played_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "12d0e69d7d9f4459bd7cb368c977f699f8ef4c3960fc252bc45b1069122c9218"
+}

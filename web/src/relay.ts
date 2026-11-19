@@ -11,16 +11,33 @@ import { AUTH_DISABLED, getAccessToken, signInAgain } from "./auth";
 // Vite proxies /v1/graphql to the local backend.
 const ENDPOINT = import.meta.env.DEV ? "/v1/graphql" : "https://graph.ortzi.cloud/v1/graphql";
 
-const fetchFn: FetchFunction = async (request, variables) => {
+function post(body: object): Promise<Response> {
   const token = getAccessToken();
-  const resp = await fetch(ENDPOINT, {
+  return fetch(ENDPOINT, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ query: request.text, variables }),
+    body: JSON.stringify(body),
   });
+}
+
+function documentMissing(body: { errors?: { extensions?: { code?: string } }[] }): boolean {
+  return body.errors?.[0]?.extensions?.code === "PERSISTED_DOCUMENT_NOT_FOUND";
+}
+
+// Production sends the persisted document id; the local backend only takes query text, and a
+// router that hasn't loaded this build's documents yet gets the text on a retry.
+const fetchFn: FetchFunction = async (request, variables) => {
+  const persisted = !import.meta.env.DEV && request.id;
+  let resp = await post(
+    persisted ? { documentId: request.id, variables } : { query: request.text, variables },
+  );
+  if (persisted && documentMissing(await resp.clone().json().catch(() => ({})))) {
+    resp = await post({ query: request.text, variables });
+  }
+
   if (resp.status === 401 && !AUTH_DISABLED) {
     // Expired or revoked token: go back through Kanidm rather than showing an error.
     await signInAgain();

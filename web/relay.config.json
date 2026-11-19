@@ -12,5 +12,10 @@
     "DateTime": "string",
     "Upload": "unknown",
     "NaiveDate": "string"
+  },
+  "persistConfig": {
+    "file": "./persisted-documents.json",
+    "algorithm": "SHA256",
+    "include_query_text": true
   }
 }

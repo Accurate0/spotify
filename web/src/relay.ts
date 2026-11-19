@@ -23,12 +23,15 @@ function post(body: object): Promise<Response> {
   });
 }
 
+// A router without this build's documents, or with persisted documents off, wants the text.
+const DOCUMENT_MISSING = ["PERSISTED_DOCUMENT_NOT_FOUND", "MISSING_QUERY_PARAM"];
+
 function documentMissing(body: { errors?: { extensions?: { code?: string } }[] }): boolean {
-  return body.errors?.[0]?.extensions?.code === "PERSISTED_DOCUMENT_NOT_FOUND";
+  return DOCUMENT_MISSING.includes(body.errors?.[0]?.extensions?.code ?? "");
 }
 
-// Production sends the persisted document id; the local backend only takes query text, and a
-// router that hasn't loaded this build's documents yet gets the text on a retry.
+// Production sends the persisted document id and falls back to the text; the local backend only
+// takes query text.
 const fetchFn: FetchFunction = async (request, variables) => {
   const persisted = !import.meta.env.DEV && request.id;
   let resp = await post(

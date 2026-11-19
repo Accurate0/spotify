@@ -29,12 +29,8 @@ jobs:
   deploy:
     needs:
       - build
-    uses: anurag/workflows/.forgejo/workflows/deploy-image.yaml@main
+    uses: anurag/workflows/.forgejo/workflows/promote-image.yaml@main
     with:
-      service-name: spotify-api
-      images: registry.anurag.sh/containers/spotify
-      manifests-path: projects/spotify
-      values-file: projects/spotify/image.values.yaml
-      tag: ${{ github.sha }}
-    secrets:
-      CI_IMAGE_UPDATER_TOKEN: ${{ secrets.CI_IMAGE_UPDATER_TOKEN }}
+      app: spotify
+      image: registry.anurag.sh/containers/spotify
+      digest: ${{ needs.build.outputs.digest }}

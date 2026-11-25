@@ -88,13 +88,26 @@ pub struct Claims {
     pub preferred_username: Option<String>,
     #[serde(default)]
     pub groups: Option<Vec<String>>,
+    /// Space-separated, as Kanidm issues it.
+    #[serde(default)]
+    pub scope: Option<String>,
 }
 
 impl Claims {
     fn identity(&self) -> &str {
         self.preferred_username.as_deref().unwrap_or(&self.sub)
     }
+
+    pub fn scopes(&self) -> std::collections::BTreeSet<&str> {
+        self.scope
+            .as_deref()
+            .unwrap_or_default()
+            .split_whitespace()
+            .collect()
+    }
 }
+
+const SCOPE_PREFIX: &str = "spotify:";
 
 #[derive(Deserialize)]
 struct UserInfo {
@@ -180,7 +193,11 @@ impl Authenticator {
         let issuer = self.issuer_for(token)?;
         let claims = self.verify(issuer, token).await?;
         let allowed = &self.inner.groups;
-        if allowed.is_empty() {
+        let scoped = claims
+            .scopes()
+            .iter()
+            .any(|scope| scope.starts_with(SCOPE_PREFIX));
+        if allowed.is_empty() || scoped {
             return Ok(claims);
         }
 
@@ -342,6 +359,8 @@ pub async fn require_auth(
 
     let claims = auth.authorize(token).await?;
     tracing::debug!(user = claims.identity(), "authorized");
+    let mut request = request;
+    request.extensions_mut().insert(claims);
     Ok(next.run(request).await)
 }
 

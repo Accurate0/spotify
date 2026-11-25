@@ -12,11 +12,13 @@ pub struct QueryRoot;
 
 #[Object(name = "Query")]
 impl QueryRoot {
+    #[graphql(requires_scopes = "spotify:history:read")]
     async fn spotify_accounts(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Account>> {
         let pool = ctx.data::<PgPool>()?;
         Ok(Account::all(pool).await?)
     }
 
+    #[graphql(requires_scopes = "spotify:history:read")]
     async fn spotify_account(
         &self,
         ctx: &Context<'_>,
@@ -27,7 +29,7 @@ impl QueryRoot {
 
     /// The Spotify app's client id, for the CLI to send users to Spotify's authorize page.
     /// Null when the server has no Spotify credentials.
-    #[graphql(inaccessible)]
+    #[graphql(inaccessible, requires_scopes = "spotify:history:read")]
     async fn spotify_client_id(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<String>> {
         Ok(ctx
             .data::<Option<crate::enrich::spotify::SpotifyConfig>>()?
@@ -36,6 +38,7 @@ impl QueryRoot {
     }
 
     /// Listening stats across the filtered plays.
+    #[graphql(requires_scopes = "spotify:history:read")]
     async fn spotify_stats(
         &self,
         #[graphql(default)] filter: StatsFilter,
@@ -44,6 +47,7 @@ impl QueryRoot {
     }
 
     /// Search tracks, episodes and artists by name.
+    #[graphql(requires_scopes = "spotify:history:read")]
     async fn spotify_search(&self, query: String) -> async_graphql::Result<Search> {
         let query = query.trim().to_owned();
         if query.is_empty() {
@@ -52,6 +56,7 @@ impl QueryRoot {
         Ok(Search { query })
     }
 
+    #[graphql(requires_scopes = "spotify:history:read")]
     async fn spotify_item(
         &self,
         ctx: &Context<'_>,
@@ -60,6 +65,7 @@ impl QueryRoot {
         Ok(Item::by_uri(ctx.data::<PgPool>()?, &uri).await?)
     }
 
+    #[graphql(requires_scopes = "spotify:history:read")]
     async fn spotify_artist(
         &self,
         ctx: &Context<'_>,
@@ -160,13 +166,14 @@ impl QueryRoot {
     }
 
     /// Progress of Spotify Web API enrichment (metadata, genres, artwork).
+    #[graphql(requires_scopes = "spotify:history:read")]
     async fn spotify_enrichment(&self, ctx: &Context<'_>) -> async_graphql::Result<Enrichment> {
         Ok(insights::enrichment(ctx.data::<PgPool>()?).await?)
     }
 
     /// Whether a file with this sha256 has already been imported for the account, so clients
     /// can skip uploading it.
-    #[graphql(inaccessible)]
+    #[graphql(inaccessible, requires_scopes = "spotify:export:write")]
     async fn spotify_file_exists(
         &self,
         ctx: &Context<'_>,

@@ -3,17 +3,18 @@ pub mod enrich;
 pub mod graphql;
 pub mod import;
 pub mod recent;
+pub mod scopes;
 pub mod telemetry;
 
 use async_graphql::http::GraphiQLSource;
-use async_graphql_axum::GraphQL;
+use async_graphql_axum::{GraphQL, GraphQLRequest, GraphQLResponse};
 use std::sync::Arc;
 
 use axum::extract::{Path, State};
 use axum::http::{StatusCode, header};
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::get;
-use axum::{Router, middleware};
+use axum::{Extension, Router, middleware};
 use axum_tracing_opentelemetry::middleware::OtelAxumLayer;
 use enrich::artwork::ArtworkStore;
 use enrich::spotify::SpotifyConfig;
@@ -36,13 +37,20 @@ pub fn router(
     public_url: &str,
     spotify: Option<SpotifyConfig>,
 ) -> Router {
-    let mut api = Router::new().route(
-        "/v1/graphql",
-        get(graphiql).post_service(GraphQL::new(graphql::schema(pool, public_url, spotify))),
-    );
-    if let Some(auth) = auth {
-        api = api.layer(middleware::from_fn_with_state(auth, auth::require_auth));
-    }
+    let api = match auth {
+        Some(auth) => Router::new()
+            .route(
+                "/v1/graphql",
+                get(graphiql)
+                    .post(scoped_graphql)
+                    .with_state(graphql::scoped_schema(pool, public_url, spotify)),
+            )
+            .layer(middleware::from_fn_with_state(auth, auth::require_auth)),
+        None => Router::new().route(
+            "/v1/graphql",
+            get(graphiql).post_service(GraphQL::new(graphql::schema(pool, public_url, spotify))),
+        ),
+    };
 
     api.route("/health", get(|| async { "ok" }))
         .route("/art/{kind}/{id}", get(artwork_image).with_state(artwork))
@@ -51,6 +59,18 @@ pub fn router(
         // Extracts the supergraph's `traceparent` and opens a root span per request, so
         // spotify's spans join the router's trace instead of starting fresh roots.
         .layer(OtelAxumLayer::default())
+}
+
+/// Runs the operation with the caller's verified claims, so fields can require their scopes.
+async fn scoped_graphql(
+    State(schema): State<graphql::AppSchema>,
+    Extension(claims): Extension<auth::Claims>,
+    request: GraphQLRequest,
+) -> GraphQLResponse {
+    schema
+        .execute(request.into_inner().data(claims))
+        .await
+        .into()
 }
 
 /// Serves stored artwork: `/art/albums/<id>` or `/art/artists/<id>`. Keys never change once

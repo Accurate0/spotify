@@ -64,6 +64,16 @@ pub fn schema(pool: PgPool, public_url: &str, spotify: Option<SpotifyConfig>) ->
     with_data(builder(), pool, public_url, spotify)
 }
 
+/// As `schema`, enforcing each field's scopes against the caller's claims.
+pub fn scoped_schema(pool: PgPool, public_url: &str, spotify: Option<SpotifyConfig>) -> AppSchema {
+    with_data(
+        builder().extension(crate::scopes::Scopes),
+        pool,
+        public_url,
+        spotify,
+    )
+}
+
 /// Attaches the pool and batch loaders (uncached, so no stale reads).
 fn with_data<Q, M>(
     builder: SchemaBuilder<Q, M, EmptySubscription>,

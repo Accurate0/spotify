@@ -103,6 +103,7 @@ pub struct LinkAccountPayload {
 
 #[Object(name = "Mutation")]
 impl MutationRoot {
+    #[graphql(requires_scopes = "spotify:account:write")]
     async fn spotify_create_account(
         &self,
         ctx: &Context<'_>,
@@ -128,7 +129,7 @@ impl MutationRoot {
         Ok(CreateAccountPayload { account })
     }
 
-    #[graphql(inaccessible)]
+    #[graphql(inaccessible, requires_scopes = "spotify:export:write")]
     async fn spotify_create_export(
         &self,
         ctx: &Context<'_>,
@@ -144,7 +145,7 @@ impl MutationRoot {
         Ok(CreateExportPayload { export })
     }
 
-    #[graphql(inaccessible)]
+    #[graphql(inaccessible, requires_scopes = "spotify:export:write")]
     async fn spotify_upload_export_file(
         &self,
         ctx: &Context<'_>,
@@ -203,7 +204,7 @@ impl MutationRoot {
         Ok(UploadExportFilePayload { status, file })
     }
 
-    #[graphql(inaccessible)]
+    #[graphql(inaccessible, requires_scopes = "spotify:export:write")]
     async fn spotify_finalize_export(
         &self,
         ctx: &Context<'_>,
@@ -221,7 +222,7 @@ impl MutationRoot {
 
     /// Links an account to the Spotify user who authorized `code`, so their recently played
     /// tracks are fetched until the next export covers them.
-    #[graphql(inaccessible)]
+    #[graphql(inaccessible, requires_scopes = "spotify:account:write")]
     async fn spotify_link_account(
         &self,
         ctx: &Context<'_>,

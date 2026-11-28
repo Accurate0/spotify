@@ -25,8 +25,8 @@ use tower_http::trace::TraceLayer;
 /// Export files are up to ~13 MB; leave headroom for multipart overhead and larger exports.
 const MAX_BODY_BYTES: usize = 64 * 1024 * 1024;
 
-/// The API. With `auth` set, every /v1/graphql request needs a valid Kanidm bearer token; `None`
-/// is for local development only. Artwork URLs in responses are absolute, under `public_url`.
+/// The API. With `auth` set, every /v1/graphql request needs the graph router's passport or a
+/// Kanidm token from the spotify client; `None` is for local development only. Artwork URLs in responses are absolute, under `public_url`.
 /// `spotify` (the app's credentials) is needed to link accounts to their Spotify users.
 /// /health and /art (Spotify artwork, which `<img>` tags fetch
 /// without a token) are always open.

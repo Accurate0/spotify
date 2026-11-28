@@ -1,49 +1,13 @@
-//! Kanidm OIDC bearer auth for /v1/graphql. Tokens come from the SPA (oidc-client-ts) or the CLI
-//! (`ortzi spotify` passes its login token as SPOTIFY_TOKEN), both on the `spotify` public
-//! client, or from the `graph` federation router, which forwards its own client's tokens. Each
-//! Kanidm client is its own issuer with its own keys, so a token is matched to a provider by its
-//! `iss` before it is verified. Adapted from ai-gateway's authenticator.
-
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use axum::extract::{Request, State};
-use axum::http::{StatusCode, header};
-use axum::middleware::Next;
-use axum::response::{IntoResponse, Response};
 use jsonwebtoken::jwk::{AlgorithmParameters, JwkSet};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode, decode_header};
 use serde::Deserialize;
 use tokio::sync::RwLock;
 
-#[derive(Debug, thiserror::Error)]
-pub enum AuthError {
-    #[error("unauthorized: {0}")]
-    Unauthorized(String),
-    #[error("forbidden: {0}")]
-    Forbidden(String),
-    #[error("jwks error: {0}")]
-    Jwks(String),
-    #[error("http error: {0}")]
-    Http(#[from] reqwest::Error),
-}
-
-/// A GraphQL-shaped JSON body, so a federation router (which rejects non-JSON subgraph
-/// responses) can pass the reason on to the caller.
-impl IntoResponse for AuthError {
-    fn into_response(self) -> Response {
-        let (status, code) = match &self {
-            Self::Unauthorized(_) => (StatusCode::UNAUTHORIZED, "UNAUTHENTICATED"),
-            Self::Forbidden(_) => (StatusCode::FORBIDDEN, "FORBIDDEN"),
-            Self::Jwks(_) | Self::Http(_) => (StatusCode::SERVICE_UNAVAILABLE, "UNAVAILABLE"),
-        };
-        let body = serde_json::json!({
-            "errors": [{ "message": self.to_string(), "extensions": { "code": code } }]
-        });
-        (status, axum::Json(body)).into_response()
-    }
-}
+use super::{AuthError, Claims};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Provider {
@@ -69,7 +33,7 @@ impl std::str::FromStr for Provider {
 }
 
 #[derive(Debug, Clone)]
-pub struct AuthConfig {
+pub struct KanidmConfig {
     pub providers: Vec<Provider>,
     /// The caller must hold one of these groups (short name or SPN). Empty allows anyone the
     /// issuers will sign for.
@@ -82,7 +46,7 @@ struct Issuer {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct Claims {
+struct TokenClaims {
     pub sub: String,
     #[serde(default)]
     pub preferred_username: Option<String>,
@@ -93,7 +57,7 @@ pub struct Claims {
     pub scope: Option<String>,
 }
 
-impl Claims {
+impl TokenClaims {
     fn identity(&self) -> &str {
         self.preferred_username.as_deref().unwrap_or(&self.sub)
     }
@@ -132,7 +96,7 @@ struct VerifyingKey {
 }
 
 #[derive(Clone)]
-pub struct Authenticator {
+pub struct Verifier {
     inner: Arc<Inner>,
 }
 
@@ -149,10 +113,10 @@ struct IssuerKeys {
     keys: RwLock<BTreeMap<String, VerifyingKey>>,
 }
 
-impl Authenticator {
+impl Verifier {
     const REFRESH_INTERVAL: Duration = Duration::from_secs(3600);
 
-    pub fn new(config: AuthConfig) -> Self {
+    pub fn new(config: KanidmConfig) -> Self {
         let issuers = config
             .providers
             .into_iter()
@@ -192,26 +156,28 @@ impl Authenticator {
     pub async fn authorize(&self, token: &str) -> Result<Claims, AuthError> {
         let issuer = self.issuer_for(token)?;
         let claims = self.verify(issuer, token).await?;
+        let groups = match &claims.groups {
+            Some(groups) => groups.clone(),
+            None => self.userinfo_groups(issuer, token).await?,
+        };
         let allowed = &self.inner.groups;
         let scoped = claims
             .scopes()
             .iter()
             .any(|scope| scope.starts_with(SCOPE_PREFIX));
-        if allowed.is_empty() || scoped {
-            return Ok(claims);
-        }
-
-        let held = match &claims.groups {
-            Some(groups) => groups.clone(),
-            None => self.userinfo_groups(issuer, token).await?,
-        };
-        if !groups_match(&held, allowed) {
+        if !allowed.is_empty() && !scoped && !groups_match(&groups, allowed) {
             return Err(AuthError::Forbidden(format!(
                 "{} is not in any of {allowed:?}",
                 claims.identity()
             )));
         }
-        Ok(claims)
+
+        Ok(Claims {
+            scopes: claims.scopes().into_iter().map(str::to_owned).collect(),
+            sub: claims.sub,
+            preferred_username: claims.preferred_username,
+            groups,
+        })
     }
 
     async fn userinfo_groups(
@@ -319,7 +285,7 @@ impl Authenticator {
         }
     }
 
-    async fn verify(&self, issuer: &IssuerKeys, token: &str) -> Result<Claims, AuthError> {
+    async fn verify(&self, issuer: &IssuerKeys, token: &str) -> Result<TokenClaims, AuthError> {
         let header = decode_header(token)
             .map_err(|e| AuthError::Unauthorized(format!("unreadable token header: {e}")))?;
         let kid = header
@@ -338,30 +304,10 @@ impl Authenticator {
         validation.set_issuer(&[&issuer.provider.issuer]);
         validation.set_audience(&[&issuer.provider.audience]);
 
-        decode::<Claims>(token, &key.key, &validation)
+        decode::<TokenClaims>(token, &key.key, &validation)
             .map(|data| data.claims)
             .map_err(|e| AuthError::Unauthorized(format!("token rejected: {e}")))
     }
-}
-
-/// Middleware: requires `Authorization: Bearer <token>` from an allowed user.
-pub async fn require_auth(
-    State(auth): State<Authenticator>,
-    request: Request,
-    next: Next,
-) -> Result<Response, AuthError> {
-    let token = request
-        .headers()
-        .get(header::AUTHORIZATION)
-        .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.strip_prefix("Bearer "))
-        .ok_or_else(|| AuthError::Unauthorized("missing bearer token".to_owned()))?;
-
-    let claims = auth.authorize(token).await?;
-    tracing::debug!(user = claims.identity(), "authorized");
-    let mut request = request;
-    request.extensions_mut().insert(claims);
-    Ok(next.run(request).await)
 }
 
 #[cfg(test)]
@@ -383,8 +329,8 @@ mod tests {
         assert!(!groups_match(&[], &["spotify_users".to_owned()]));
     }
 
-    fn authenticator() -> Authenticator {
-        Authenticator::new(AuthConfig {
+    fn authenticator() -> Verifier {
+        Verifier::new(KanidmConfig {
             providers: vec![
                 "https://idm.example.test/oauth2/openid/spotify/=spotify"
                     .parse()
@@ -421,22 +367,6 @@ mod tests {
             spotify.userinfo_endpoint,
             "https://idm.example.test/oauth2/openid/spotify/userinfo"
         );
-    }
-
-    #[tokio::test]
-    async fn errors_are_graphql_json() {
-        let response = AuthError::Unauthorized("missing bearer token".to_owned()).into_response();
-        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
-        assert_eq!(response.headers()[header::CONTENT_TYPE], "application/json");
-        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
-            .await
-            .unwrap();
-        let body: serde_json::Value = serde_json::from_slice(&body).unwrap();
-        assert_eq!(
-            body["errors"][0]["message"],
-            "unauthorized: missing bearer token"
-        );
-        assert_eq!(body["errors"][0]["extensions"]["code"], "UNAUTHENTICATED");
     }
 
     #[test]

@@ -1,9 +1,9 @@
 //! The router rejects unauthenticated /v1/graphql requests when auth is enabled. No network:
-//! requests without a usable token fail before any key lookup.
+//! requests without a usable passport or token fail before any key lookup.
 
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
-use spotify_server::auth::{AuthConfig, Authenticator, Provider};
+use spotify_server::auth::{AuthConfig, Authenticator, KanidmConfig, Provider};
 use sqlx::postgres::PgPoolOptions;
 use tower::ServiceExt;
 
@@ -12,13 +12,19 @@ fn app() -> axum::Router {
     let pool = PgPoolOptions::new()
         .connect_lazy("postgres://unused@localhost/unused")
         .unwrap();
-    let auth = Authenticator::new(AuthConfig {
-        providers: vec![Provider {
-            issuer: "https://idm.example.test/oauth2/openid/spotify".to_owned(),
+    let auth = Authenticator::new(
+        AuthConfig {
             audience: "spotify".to_owned(),
-        }],
-        groups: vec!["spotify_users".to_owned()],
-    });
+            jwks: "http://router.invalid/.well-known/passport.jwks".to_owned(),
+        },
+        KanidmConfig {
+            providers: vec![Provider {
+                issuer: "https://idm.example.test/oauth2/openid/spotify".to_owned(),
+                audience: "spotify".to_owned(),
+            }],
+            groups: vec!["spotify_users".to_owned()],
+        },
+    );
     spotify_server::router(pool, Some(auth), None, "https://spotify.test", None)
 }
 
@@ -39,6 +45,15 @@ async fn graphql_requires_a_token() {
 async fn malformed_tokens_are_rejected() {
     let request = Request::post("/v1/graphql")
         .header("authorization", "Bearer not-a-jwt")
+        .body(Body::empty())
+        .unwrap();
+    assert_eq!(status(request).await, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn malformed_passports_are_rejected() {
+    let request = Request::post("/v1/graphql")
+        .header("x-graph-passport", "not-a-jwt")
         .body(Body::empty())
         .unwrap();
     assert_eq!(status(request).await, StatusCode::UNAUTHORIZED);

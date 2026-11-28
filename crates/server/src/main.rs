@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use anyhow::Context;
 use clap::{Args, Parser, Subcommand};
-use spotify_server::auth::{AuthConfig, Authenticator, Provider};
+use spotify_server::auth::{AuthConfig, Authenticator, KanidmConfig, Provider};
 use spotify_server::enrich::artwork::ArtworkStore;
 use spotify_server::enrich::spotify::{SpotifyClient, SpotifyConfig};
 use spotify_server::enrich::{self, EnrichConfig};
@@ -48,6 +48,11 @@ struct ServeArgs {
     #[arg(long, env = "AUTH_DISABLED", default_value_t = false)]
     auth_disabled: bool,
 
+    /// How to verify the graph router's passports, rendered by ortzi-app from the subgraph.
+    #[arg(long, env = "SUBGRAPH_AUTH")]
+    subgraph_auth: Option<AuthConfig>,
+
+    /// The Kanidm client the CLI signs in to when it calls spotify directly.
     #[arg(
         long,
         env = "OIDC_ISSUER",
@@ -58,12 +63,8 @@ struct ServeArgs {
     #[arg(long, env = "OIDC_AUDIENCE", default_value = "spotify")]
     oidc_audience: String,
 
-    /// Trusted issuers as `<issuer>=<audience>` (comma separated), e.g. this app's own client
-    /// and the `graph` federation router's. Replaces OIDC_ISSUER/OIDC_AUDIENCE when set.
-    #[arg(long, env = "OIDC_PROVIDERS", value_delimiter = ',')]
-    oidc_providers: Vec<Provider>,
-
-    /// Groups allowed to use the API (comma separated); empty allows any signed-in user.
+    /// Groups allowed to call spotify directly (comma separated), besides holders of a spotify
+    /// scope; empty allows any signed-in user.
     #[arg(
         long,
         env = "OIDC_GROUPS",
@@ -185,27 +186,25 @@ async fn serve(database_url: Option<String>, args: ServeArgs) -> anyhow::Result<
         tracing::warn!("authentication disabled");
         None
     } else {
-        let providers = if args.oidc_providers.is_empty() {
-            vec![Provider {
-                issuer: args.oidc_issuer,
-                audience: args.oidc_audience,
-            }]
-        } else {
-            args.oidc_providers
-        };
-        let auth = Authenticator::new(AuthConfig {
-            providers,
-            groups: args
-                .oidc_groups
-                .into_iter()
-                .filter(|g| !g.is_empty())
-                .collect(),
-        });
-        // Kanidm being briefly unreachable shouldn't stop the API starting; unknown keys are
-        // fetched on demand.
-        if let Err(e) = auth.refresh().await {
-            tracing::warn!("initial jwks fetch failed, retrying on demand: {e}");
-        }
+        let passport = args.subgraph_auth.ok_or_else(|| {
+            anyhow::anyhow!("SUBGRAPH_AUTH is not set; AUTH_DISABLED=true for local development")
+        })?;
+        let auth = Authenticator::new(
+            passport,
+            KanidmConfig {
+                providers: vec![Provider {
+                    issuer: args.oidc_issuer,
+                    audience: args.oidc_audience,
+                }],
+                groups: args
+                    .oidc_groups
+                    .into_iter()
+                    .filter(|g| !g.is_empty())
+                    .collect(),
+            },
+        );
+        // the router or kanidm being briefly unreachable shouldn't stop the API starting
+        auth.refresh().await;
         tokio::spawn(auth.clone().run());
         Some(auth)
     };
